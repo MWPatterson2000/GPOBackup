@@ -55,7 +55,4 @@ This script is for backups.  To restore you can do the following steps
     import-gpo -BackupGpoName <Origional GPO Name> -TargetName <Destination GPO Name> -path <Full Path to GPO Backup>
     EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
     Open GPMC
-    Right Click Group Policy Objects
-    Select Manage Backups
-    Change Folder to the extracted zip file location and select the folder for the GPO you wish to restore, with the browse button
-    Select on the GPO and click restore 
+    Verify GPO is restored
