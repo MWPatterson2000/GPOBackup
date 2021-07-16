@@ -56,9 +56,11 @@ Thanks for others on here that I have pulled parts from to make a more comprehen
 
 This script is for backups.  To restore you can do the following steps
     Extract the zip file to a location for use
-    
+    Open Admin PowerShell
+    import-gpo -BackupGpoName <Origional GPO Name> -TargetName <Destination GPO Name> -path <Full Path to GPO Backup>
+    EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
     Open GPMC
-    Verify GPO Exists 
+    Verify GPO is restored
 
 #>
 # Clear Screen
