@@ -56,11 +56,9 @@ Thanks for others on here that I have pulled parts from to make a more comprehen
 
 This script is for backups.  To restore you can do the following steps
     Extract the zip file to a location for use
+    
     Open GPMC
-    Right Click Group Policy Objects
-    Select Manage Backups
-    Change Folder to the extracted zip file location and select the folder for the GPO you wish to restore, with the browse button
-    Select on the GPO and click restore  
+    Verify GPO Exists 
 
 #>
 # Clear Screen
