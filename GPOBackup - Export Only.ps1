@@ -45,6 +45,7 @@ Revision History
     2021-04-14 - Added GPO Change Count messages
     2021-05-13 - Added HTML Reporting for Individual GPO's
     2022-02-18 - Removed all but stuff needed just for Exporting the GPO's
+    2022-09-01 - Remove GUID from the Folder path to all long GPO Names
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -231,7 +232,7 @@ Write-Host "`t`tCreated Unlinked GPO Properties Report" -Fore Yellow
 Write-Host "`tPlease Wait - Backing up WMI Filters" -Fore Yellow
 #$WMIFilters = @()
 #$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select DistinguishedName, whenCreated, whenChanged, msWMI-Author, msWMI-ID, msWMI-Name, msWMI-Parm1, msWMI-Parm2
-$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select * 
+$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
 $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
     write-host -ForeGroundColor Green "`tExporting $RowCount WMI Filters"
@@ -258,7 +259,8 @@ if ($individualBackup -eq 'Yes'){
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -Fore Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
+            #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname) # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
@@ -273,7 +275,8 @@ if ($individualBackup -eq 'Yes'){
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -Fore Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
+            #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname) # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
