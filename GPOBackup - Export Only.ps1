@@ -46,6 +46,7 @@ Revision History
     2021-05-13 - Added HTML Reporting for Individual GPO's
     2022-02-18 - Removed all but stuff needed just for Exporting the GPO's
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
+    2023-03-16 - Script Cleanup
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -207,7 +208,7 @@ Write-Host "`t`tCreated GPO Properties Report" -Fore Yellow
 # Export Unlinked GPO Report
 Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -Fore Yellow
 function IsNotLinked($xmldata) {
-    If ($xmldata.GPO.LinksTo -eq $null) {
+    If ($null -eq $xmldata.GPO.LinksTo) {
         Return $true
     }
     Return $false

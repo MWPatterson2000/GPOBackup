@@ -45,6 +45,7 @@ Revision History
     2021-04-14 - Added GPO Change Count messages
     2021-05-13 - Added HTML Reporting for Individual GPO's
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
+    2023-03-16 - Script Cleanup
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -171,7 +172,7 @@ Function UploadFileInSlice ($ctx, $libraryName, $fileName, $fileChunkSizeInMB) {
             Write-Host “`t`tError occurred - $fileName”  -Fore Red
         }
         Finally {
-            if ($Fs -ne $null) {
+            if ($null -ne $Fs) {
                 $Fs.Dispose()
             }
         }
@@ -239,7 +240,7 @@ $deleteOlder = 'No' # No
 
 # Set min age of files
 $max_days = '-7'
- 
+
 # Get the current date
 $curr_date = Get-Date
 
@@ -296,8 +297,8 @@ if ($useMapShare -eq "Yes") {
 # Get Account to copy with - Used when Mapping a Drive
 if ($useShare -eq "No") {
     $user = Read-Host "Enter User Name"# -AsString
-    $pwd = Read-Host "Enter Password" -AsSecureString
-    $mycreds = New-Object System.Management.Automation.PSCredential ($User, $Pwd)
+    $password = Read-Host "Enter Password" -AsSecureString
+    $mycreds = New-Object System.Management.Automation.PSCredential ($user, $password)
 }
 
 # Set Domain
@@ -446,7 +447,7 @@ Write-Host "`t`tCreated GPO Properties Report" -Fore Yellow
 # Export Unlinked GPO Report
 Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -Fore Yellow
 function IsNotLinked($xmldata) {
-    If ($xmldata.GPO.LinksTo -eq $null) {
+    If ($null -eq $xmldata.GPO.LinksTo) {
         Return $true
     }
     Return $false
