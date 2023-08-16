@@ -6,6 +6,7 @@ This script will check for GPO's modified in the last day and then export the da
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.zip                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.7z                       - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOChanges.csv           - This file contains the Changed GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOList.csv              - This file contains GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.csv            - This file Contains GPO Information like Name, Links, Revision Number, & Security Filtering
@@ -47,6 +48,7 @@ Revision History
     2022-02-18 - Removed all but stuff needed just for Exporting the GPO's
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
     2023-03-16 - Script Cleanup
+    2023-08-16 - Adding ability to use 7-Zip from compression
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -118,7 +120,7 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -Fore Yellow
 If ($setServer -eq "Yes") {
-    Get-GPO -All -Server $server| Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    Get-GPO -All -Server $server | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
     Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
@@ -238,10 +240,10 @@ $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
     write-host -ForeGroundColor Green "`tExporting $RowCount WMI Filters"
     $WMIFilters | export-csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-    } 
+} 
 else {
     write-host -ForeGroundColor Green "There are no WMI Filters to export`n"
-    } 
+} 
 Write-Host "`t`tBacked up WMI Filters" -Fore Yellow
 
 
@@ -253,7 +255,7 @@ if ((Test-Path $backupPath) -eq $false) {
 
 
 # Backup GPOs into named folders
-if ($individualBackup -eq 'Yes'){
+if ($individualBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -Fore Yellow
     If ($setServer -eq "Yes") {
         $allGPOs = get-gpo -all -Server $server
@@ -292,7 +294,7 @@ if ($individualBackup -eq 'Yes'){
 
 
 # Backup All GPOs into one folder
-if ($singleBackup -eq 'Yes'){
+if ($singleBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -Fore Yellow
     If ($setServer -eq "Yes") {
         $foldername = join-path $backupPath + "_All"
@@ -321,18 +323,36 @@ Write-Host "`t`tBacked up PolicyDefinition Folder" -Fore Yellow
 
 
 # Compress Folders
-Write-Host "`tPlease Wait - Creating ZIP File" -Fore Yellow
-#PowerShell 5.0
-#Compress-Archive -Path $backupPath -DestinationPath $backupPath+".zip"
-#PowerShell 2.0-4.x
-$source = $backupPath
-$destination = $backupPath + ".zip"
-If (Test-path $destination) {
-    Remove-item $destination
+Write-Host "`tPlease Wait - Checking for 7-Zip" -Fore Yellow
+# Path to 7-Zip
+$7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
+# Compress Folders to 7-Zip File
+if ((Test-Path $7zipPath) -eq $true) {
+    Write-Host "`tPlease Wait - Creating 7-ZIP File" -Fore Yellow
+    # Create Alias
+    Set-Alias Compress-7Zip $7ZipPath
+    # Set Source & Destination
+    $source = $backupPath
+    $destination = $backupPath + ".7z"
+    # Compress Files/Folder
+    Compress-7zip a -mx9 -r -tzip $destination $source
 }
-Add-Type -assembly "system.io.compression.filesystem"
-[io.compression.zipfile]::CreateFromDirectory($Source, $destination)
-Write-Host "`t`tCreated ZIP File" -Fore Yellow
+
+# Compress Folders to Zip File
+if ((Test-Path $7zipPath) -eq $false) {
+    Write-Host "`tPlease Wait - Creating ZIP File" -Fore Yellow
+    #PowerShell 5.0
+    #Compress-Archive -Path $backupPath -DestinationPath $backupPath+".zip"
+    #PowerShell 2.0-4.x
+    $source = $backupPath
+    $destination = $backupPath + ".zip"
+    If (Test-path $destination) {
+        Remove-item $destination
+    }
+    Add-Type -assembly "system.io.compression.filesystem"
+    [io.compression.zipfile]::CreateFromDirectory($Source, $destination)
+    Write-Host "`t`tCreated ZIP File" -Fore Yellow
+}
 
 
 # Delete GPO Backup Folder
