@@ -692,4 +692,4 @@ if ($useMapShare -eq "Yes") {
 
 
 # Completed Script
-Write-Output "`tGPO Backup - Complete"
+Write-Output "`tGPO Backup - Complete" -Fore Yellow

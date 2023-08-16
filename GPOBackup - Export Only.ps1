@@ -362,4 +362,4 @@ Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
 
 
 # Completed Script
-Write-Output "`tGPO Backup - Complete"
+Write-Output "`tGPO Backup - Complete" -Fore Yellow
