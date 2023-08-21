@@ -55,16 +55,16 @@ Revision History
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
 - WMI Filter Export
-    http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354
+    -http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354
 
 - ManageWMIFilters.ps1
-    Other Parts taken from other scripts on the web
+    -Other Parts taken from other scripts on the web
 
 This script is for backups.  To restore you can do the following steps
 
 1. Extract the zip file to a location for use
 2. Open Admin PowerShell
-3. import-gpo -BackupGpoName <Origional GPO Name> -TargetName <Destination GPO Name> -path <Full Path to GPO Backup>
-    EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
+3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup"
+    -EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
 4. Open GPMC
 5. Verify GPO is restored
