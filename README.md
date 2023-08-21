@@ -56,7 +56,7 @@ Revision History
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
 WMI Filter Export:  
-    - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354
+    - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354  
     - ManageWMIFilters.ps1  
 Other Parts taken from other scripts on the web
 
