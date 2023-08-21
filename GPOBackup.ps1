@@ -175,7 +175,7 @@ Function UploadFileInSlice ($ctx, $libraryName, $fileName, $fileChunkSizeInMB) {
             } #// while ((bytesRead = br.Read(buffer, 0, buffer.Length)) > 0)
         }
         Catch {
-            Write-Host “`t`tError occurred - $fileName”  -Fore Red
+            Write-Host “`t`tError occurred - $fileName”  -ForeGroundColor Red
         }
         Finally {
             if ($null -ne $Fs) {
@@ -330,14 +330,14 @@ $backupPath = $backupFolderPath + $backupFileName
 
 # Begin Processing GPO's
 # Check if GPO Changes in last Day, Exit if no changes made in last day
-Write-Host "`n`tPlease Wait - Checking for GPO Changes in the last 24 hours" -Fore Yellow
+Write-Host "`n`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
 $modifiedGPOs = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }).count
 If ($modifiedGPOs -eq "0") {
-    Write-Host "`tNo Changes in last Day" -Fore Green
+    Write-Host "`tNo Changes in last Day" -ForeGroundColor Green
     Exit   #Exit if no changes made in last day
 }
-Write-Host "`n`tPlease Wait - GPO Changes in the last 24 hours" -Fore Yellow
-Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -Fore Yellow
+Write-Host "`n`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -ForeGroundColor Yellow
 
 
 # Verify GPO BackupFolder
@@ -347,56 +347,56 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 
 
 # Generate List of changes
-Write-Host "`n`tPlease Wait - Creating GPO Email Report" -Fore Yellow
+Write-Host "`n`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
 Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) } | Export-csv $backupPath-GPOChanges.csv -NoTypeInformation
-Write-Host "`t`tCreated GPO Email Report" -Fore Yellow
+Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
 
 
 # Send email Notification
 if ($sendEmail -eq "Yes") {
-    Write-Host "`tPlease Wait - Sending Email Report" -Fore Yellow
+    Write-Host "`tPlease Wait - Sending Email Report" -ForeGroundColor Yellow
     send_email
-    Write-Host "`t`tSent Email Report" -Fore Yellow
+    Write-Host "`t`tSent Email Report" -ForeGroundColor Yellow
 }
 
 
 # Export GPO List
-Write-Host "`tPlease Wait - Creating GPO List" -Fore Yellow
+Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     Get-GPO -All -Server $server| Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
     Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
-Write-Host "`t`tCreated GPO List" -Fore Yellow
+Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
 
 # Export GPO Report - XML
-Write-Host "`tPlease Wait - Creating GPO Report - XML" -Fore Yellow
+Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
 }
 Else {
     Get-GPOReport -All -ReportType xml -Path $backupPath-GPOReport.xml
 }
-Write-Host "`t`tCreated GPO Report - XML" -Fore Yellow
+Write-Host "`t`tCreated GPO Report - XML" -ForeGroundColor Yellow
 
 
 # Export GPO Report - HTML
 If ($HTMLReport -eq "Yes") {
-    Write-Host "`tPlease Wait - Creating GPO Report - HTML" -Fore Yellow
+    Write-Host "`tPlease Wait - Creating GPO Report - HTML" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         Get-GPOReport -All -Server $server -ReportType Html -Path $backupPath-GPOReport.html
     }
     Else {
         Get-GPOReport -All -ReportType Html -Path $backupPath-GPOReport.html
     }
-    Write-Host "`t`tCreated GPO Report - HTML" -Fore Yellow
+    Write-Host "`t`tCreated GPO Report - HTML" -ForeGroundColor Yellow
 }
 
 
 # Export GPO Properties Report
-Write-Host "`tPlease Wait - Creating GPO Properties Report" -Fore Yellow
+Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     $GPOList = (Get-Gpo -All -Server $server).DisplayName
 }
@@ -447,11 +447,11 @@ foreach ($GPOItem in $GPOList) {
     }
 }
 $colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
-Write-Host "`t`tCreated GPO Properties Report" -Fore Yellow
+Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
 
 
 # Export Unlinked GPO Report
-Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -Fore Yellow
+Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
 function IsNotLinked($xmldata) {
     If ($null -eq $xmldata.GPO.LinksTo) {
         Return $true
@@ -466,16 +466,16 @@ Else {
     Get-GPO -All | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
 }
 If ($unlinkedGPOs.Count -eq 0) {
-    Write-Host "`t`tNo Unlinked GPO's Found" -Fore Green
+    Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
 }
 Else {
     $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
 }
-Write-Host "`t`tCreated Unlinked GPO Properties Report" -Fore Yellow
+Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
 
 
 # Orphaned GPOs
-Write-Host "`tPlease Wait - Creating Orphaned GPO Properties Reports" -Fore Yellow
+Write-Host "`tPlease Wait - Creating Orphaned GPO Properties Reports" -ForeGroundColor Yellow
 $Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
 # Get AD Domain Name
 $DomainDNS = $Domain.Name
@@ -546,7 +546,7 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 
 
 # Backup WMI Filters
-Write-Host "`tPlease Wait - Backing up WMI Filters" -Fore Yellow
+Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
 #$WMIFilters = @()
 #$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select DistinguishedName, whenCreated, whenChanged, msWMI-Author, msWMI-ID, msWMI-Name, msWMI-Parm1, msWMI-Parm2
 $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
@@ -557,13 +557,13 @@ if ($RowCount -ne 0) {
     #write-host -ForeGroundColor Green "An export of the WMI Filters has been stored at $backupPath-WMIFiltersExport.csv`n"
     } 
 else {
-    write-host -ForeGroundColor Green "There are no WMI Filters to export`n"
+    write-host -ForeGroundColor Green "`t`tThere are no WMI Filters to export`n"
     } 
-Write-Host "`t`tBacked up WMI Filters" -Fore Yellow
+Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 
 # Verify GPO BackupPath
-Write-Host "`tPlease Wait - Creating Backup Directory" -Fore Yellow
+Write-Host "`tPlease Wait - Creating Backup Directory" -ForeGroundColor Yellow
 if ((Test-Path $backupPath) -eq $false) {
     New-Item -Path $backupPath -ItemType directory
 }
@@ -571,11 +571,11 @@ if ((Test-Path $backupPath) -eq $false) {
 
 # Backup GPOs into named folders
 if ($individualBackup -eq 'Yes'){
-    Write-Host "`tPlease Wait - Backing up GPO's" -Fore Yellow
+    Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         $allGPOs = get-gpo -all -Server $server
         foreach ($gpo in $allGPOs) {
-            Write-Host "`t`tProcessing GPO" $gpo.displayname -Fore Yellow
+            Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             $foldername = join-path $backupPath ($gpo.displayname) # Keep " "
@@ -592,7 +592,7 @@ if ($individualBackup -eq 'Yes'){
     Else {
         $allGPOs = get-gpo -all
         foreach ($gpo in $allGPOs) {
-            Write-Host "`t`tProcessing GPO" $gpo.displayname -Fore Yellow
+            Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             $foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             if ((Test-Path $foldername) -eq $false) {
@@ -604,21 +604,21 @@ if ($individualBackup -eq 'Yes'){
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
-    Write-Host "`t`tBacked up GPO's" -Fore Yellow
+    Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
 }
 
 
 #<#
 # Backup All GPOs into one folder
 if ($singleBackup -eq 'Yes'){
-    Write-Host "`tPlease Wait - Backing up GPO's" -Fore Yellow
+    Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         $foldername = join-path $backupPath + "_All"
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
         Backup-GPO -All -Server $server -Path $foldername -Comment $date
-        Write-Host "`t`tBacked up GPO's" -Fore Yellow
+        Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
     Else {
         $foldername = join-path $backupPath + "_All"
@@ -626,26 +626,26 @@ if ($singleBackup -eq 'Yes'){
             New-Item -Path $foldername -ItemType directory
         }
         Backup-GPO -All -Path $foldername -Comment $date
-        Write-Host "`t`tBacked up GPO's" -Fore Yellow
+        Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 }
 #>
 
 
 # Backup PolicyDefinition Folder
-Write-Host "`tPlease Wait - Backing up PolicyDefinition Folder" -Fore Yellow
+Write-Host "`tPlease Wait - Backing up PolicyDefinition Folder" -ForeGroundColor Yellow
 $policydefinitionSource = "\\" + $env:USERDOMAIN + "\SYSVOL\" + $env:USERDNSDOMAIN + "\Policies\PolicyDefinitions"
 Copy-Item -Path $policydefinitionSource -Recurse -Destination $backupPath -Container
-Write-Host "`t`tBacked up PolicyDefinition Folder" -Fore Yellow
+Write-Host "`t`tBacked up PolicyDefinition Folder" -ForeGroundColor Yellow
 
 
 # Compress Folders
-Write-Host "`tPlease Wait - Checking for 7-Zip" -Fore Yellow
+Write-Host "`tPlease Wait - Checking for 7-Zip" -ForeGroundColor Yellow
 # Path to 7-Zip
 $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
 # Compress Folders to 7-Zip File
 if ((Test-Path $7zipPath) -eq $true) {
-    Write-Host "`tPlease Wait - Creating 7-ZIP File" -Fore Yellow
+    Write-Host "`tPlease Wait - Creating 7-ZIP File" -ForeGroundColor Yellow
     # Create Alias
     Set-Alias Compress-7Zip $7ZipPath
     # Set Source & Destination
@@ -657,7 +657,7 @@ if ((Test-Path $7zipPath) -eq $true) {
 
 # Compress Folders to Zip File
 if ((Test-Path $7zipPath) -eq $false) {
-    Write-Host "`tPlease Wait - Creating ZIP File" -Fore Yellow
+    Write-Host "`tPlease Wait - Creating ZIP File" -ForeGroundColor Yellow
     #PowerShell 5.0
     #Compress-Archive -Path $backupPath -DestinationPath $backupPath+".zip"
     #PowerShell 2.0-4.x
@@ -668,13 +668,12 @@ if ((Test-Path $7zipPath) -eq $false) {
     }
     Add-Type -assembly "system.io.compression.filesystem"
     [io.compression.zipfile]::CreateFromDirectory($Source, $destination)
-    Write-Host "`t`tCreated ZIP File" -Fore Yellow
+    Write-Host "`t`tCreated ZIP File" -ForeGroundColor Yellow
 }
 
 
 # Delete GPO Backup Folder
-#Write-Output "`tPlease Wait - Deleting GPO Backup Folder"
-Write-Host "`tPlease Wait - Deleting GPO Backup Folder" -Fore Yellow
+Write-Host "`tPlease Wait - Deleting GPO Backup Folder" -ForeGroundColor Yellow
 Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
 
 
@@ -713,11 +712,11 @@ if ($useSharePoint -eq "Yes") {
     $Context.ExecuteQuery()
 
     # Upload file(s)
-    Write-Host "`n`tCopying the files - Please Wait" -Fore Yellow
+    Write-Host "`n`tCopying the files - Please Wait" -ForeGroundColor Yellow
     #Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File -Recurse)) {
     #Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File)) {
     Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File | Where-Object { $_.LastWriteTime -gt $updload_date })) {
-        Write-Host "`t`tCopying the file: "$File.FullName -Fore Yellow
+        Write-Host "`t`tCopying the file: "$File.FullName -ForeGroundColor Yellow
         #$UpFile = UploadFileInSlice -ctx $Context -libraryName $DocLibName -fileName $File.FullName
         $fileName = $File.FullName
         $UpFile = UploadFileInSlice -ctx $Context -libraryName $DocLibName -fileName $fileName
@@ -728,26 +727,25 @@ if ($useSharePoint -eq "Yes") {
 
 # Delete Old Backup Files
 If ($deleteOlder -eq 'Yes') {
-    Write-Output '`tDeleting older GPO Backup files' -Fore Yellow
+    Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
     Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
 }
 
 
 # Complete if not moving off of System
 if ($moveBackups -eq "No") {
-    #Write-Output "`tGPO Backup - Complete"
-    Write-Host "`tGPO Backup - Complete" -Fore Yellow
+    Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
     Exit
 }
 
 
 # Copy/Move to File Share
 if ($useShare -eq "Yes") {
-    Write-Output "`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -Fore Yellow
+    Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
     #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
     Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
     Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
-    Write-Output "`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -Fore Yellow
+    Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
 }
 
 
@@ -756,15 +754,15 @@ if ($useMapShare -eq "Yes") {
     #Net Use $driveLetter $networkDrive /User:$user $pwd
     New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $networkDrive -Credential $mycreds
     #Copy/Move GPO`t Backups
-    Write-Output "`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -Fore Yellow
+    Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
     #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
     Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
     Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
-    Write-Output "`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -Fore Yellow
+    Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
     #Disconnect Network Drive
     #Net Use $driveLetter /D
 }
 
 
 # Completed Script
-Write-Output "`tGPO Backup - Complete" -Fore Yellow
+Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
