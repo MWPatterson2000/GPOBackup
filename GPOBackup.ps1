@@ -475,6 +475,74 @@ Write-Host "`t`tCreated Unlinked GPO Properties Report" -Fore Yellow
 
 
 # Orphaned GPOs
+Write-Host "`tPlease Wait - Creating Orphaned GPO Properties Reports" -Fore Yellow
+$Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
+# Get AD Domain Name
+$DomainDNS = $Domain.Name
+# Get AD Distinguished Name
+$DomainDistinguishedName = $Domain.GetDirectoryEntry() | Select-Object -ExpandProperty DistinguishedName  
+# Build out GPO Policy Locations
+$GPOPoliciesDN = "CN=Policies,CN=System,$DomainDistinguishedName"
+$GPOPoliciesSYSVOLUNC = "\\$DomainDNS\SYSVOL\$DomainDNS\Policies"
+"Reading GPO information from Active Directory ($GPOPoliciesDN)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt
+$GPOPoliciesADSI = [ADSI]"LDAP://$GPOPoliciesDN"
+[array]$GPOPolicies = $GPOPoliciesADSI.psbase.children
+ForEach ($GPO in $GPOPolicies) { 
+    [array]$DomainGPOList += $GPO.Name
+}
+#$DomainGPOList = $DomainGPOList -replace("{","") ; $DomainGPOList = $DomainGPOList -replace("}","")
+$DomainGPOList = $DomainGPOList | sort-object 
+[int]$DomainGPOListCount = $DomainGPOList.Count
+"Discovered $DomainGPOListCount GPCs (Group Policy Containers) in Active Directory ($GPOPoliciesDN)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+"Reading GPO information from SYSVOL ($GPOPoliciesSYSVOLUNC)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+[array]$GPOPoliciesSYSVOL = Get-ChildItem $GPOPoliciesSYSVOLUNC
+ForEach ($GPO in $GPOPoliciesSYSVOL) {
+    If ($GPO.Name -ne "PolicyDefinitions") { 
+        [array]$SYSVOLGPOList += $GPO.Name 
+    }
+}
+#$SYSVOLGPOList = $SYSVOLGPOList -replace("{","") ; $SYSVOLGPOList = $SYSVOLGPOList -replace("}","")
+$SYSVOLGPOList = $SYSVOLGPOList | sort-object 
+[int]$SYSVOLGPOListCount = $SYSVOLGPOList.Count
+"Discovered $SYSVOLGPOListCount GPTs (Group Policy Templates) in SYSVOL ($GPOPoliciesSYSVOLUNC)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+
+## COMPARE-OBJECT cmdlet note:
+## The => sign indicates that the item in question was found in the property set of the second object but not found in the property set for the first object. 
+## The <= sign indicates that the item in question was found in the property set of the first object but not found in the property set for the second object.
+
+# Check for GPTs in SYSVOL that don't exist in AD
+[array]$MissingADGPOs = Compare-Object $SYSVOLGPOList $DomainGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
+[int]$MissingADGPOsCount = $MissingADGPOs.Count
+$MissingADGPOsPCTofTotal = $MissingADGPOsCount / $DomainGPOListCount
+$MissingADGPOsPCTofTotal = "{0:p2}" -f $MissingADGPOsPCTofTotal  
+"There are $MissingADGPOsCount GPTs in SYSVOL that don't exist in Active Directory ($MissingADGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+
+If ($MissingADGPOsCount -gt 0 ) {
+    "These are:" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+    $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+}
+"`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+# Write Missing GPOs in AD to CSV File
+if ($MissingADGPOs.Count -gt 0) {
+    $MissingADGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsAD.csv -NoTypeInformation
+}
+
+# Check for GPCs in AD that don't exist in SYSVOL
+[array]$MissingSYSVOLGPOs = Compare-Object $DomainGPOList $SYSVOLGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
+[int]$MissingSYSVOLGPOsCount = $MissingSYSVOLGPOs.Count
+$MissingSYSVOLGPOsPCTofTotal = $MissingSYSVOLGPOsCount / $DomainGPOListCount
+$MissingSYSVOLGPOsPCTofTotal = "{0:p2}" -f $MissingSYSVOLGPOsPCTofTotal  
+"There are $MissingSYSVOLGPOsCount GPCs in Active Directory that don't exist in SYSVOL ($MissingSYSVOLGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+
+If ($MissingSYSVOLGPOsCount -gt 0 ) {
+    "These are:" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+    $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+}
+"`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+# Write Missing GPOs in SYSVOL to CSV File
+if ($MissingSYSVOLGPOs.Count -gt 0) {
+    $MissingSYSVOLGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsSYSVOL.csv -NoTypeInformation
+}
 
 
 # Backup WMI Filters
