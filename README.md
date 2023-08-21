@@ -5,7 +5,7 @@ This script will check for GPO's modified in the last day and then only export t
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
 
-- <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.zip                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
+- '<Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.zip'                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
 - <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOChanges.csv           - This file contains the Changed GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
 - <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOList.csv              - This file contains GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
 - <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.csv            - This file Contains GPO Information like Name, Links, Revision Number, & Security Filtering
