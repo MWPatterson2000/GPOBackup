@@ -52,7 +52,7 @@ Revision History
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
     2023-03-16 - Script Cleanup
     2023-08-16 - Adding ability to use 7-Zip from compression
-    2023-08-21 - Added Orphaned GPO Report
+    2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -266,10 +266,6 @@ ForEach ($GPO in $GPOPoliciesSYSVOL) {
 $SYSVOLGPOList = $SYSVOLGPOList | sort-object 
 [int]$SYSVOLGPOListCount = $SYSVOLGPOList.Count
 "Discovered $SYSVOLGPOListCount GPTs (Group Policy Templates) in SYSVOL ($GPOPoliciesSYSVOLUNC)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
-
-## COMPARE-OBJECT cmdlet note:
-## The => sign indicates that the item in question was found in the property set of the second object but not found in the property set for the first object. 
-## The <= sign indicates that the item in question was found in the property set of the first object but not found in the property set for the second object.
 
 # Check for GPTs in SYSVOL that don't exist in AD
 [array]$MissingADGPOs = Compare-Object $SYSVOLGPOList $DomainGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
