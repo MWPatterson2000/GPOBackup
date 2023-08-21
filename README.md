@@ -1,6 +1,6 @@
 Name: GPOBackup.ps1
 
-This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimun needed.
+This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
@@ -60,7 +60,7 @@ WMI Filter Export:
     - ManageWMIFilters.ps1  
 Other Parts taken from other scripts on the web
 
-This script is for backups.  To restore you can do the following steps
+This script is for backups.  To restore you can do the following steps:
 
 1. Extract the zip file to a location for use
 2. Open Admin PowerShell

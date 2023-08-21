@@ -1,7 +1,7 @@
 ﻿<#
 Name: GPOBackup.ps1
 
-This script will check for GPO's modified in the last day and then export the data.  This will keep the number of backups and files down to the minimun needed.
+This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
@@ -55,21 +55,19 @@ Revision History
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
-    WMI Filter Export
-    http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354
-    ManageWMIFilters.ps1
+WMI Filter Export:  
+    - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354  
+    - ManageWMIFilters.ps1  
+Other Parts taken from other scripts on the web
 
-    Other Parts taken from other scripts on the web
+This script is for backups.  To restore you can do the following steps:
 
-
-This script is for backups.  To restore you can do the following steps
-    Extract the zip file to a location for use
-    Open Admin PowerShell
-    import-gpo -BackupGpoName <Origional GPO Name> -TargetName <Destination GPO Name> -path <Full Path to GPO Backup>
-    EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
-    Open GPMC
-    Verify GPO is restored
-
+1. Extract the zip file to a location for use
+2. Open Admin PowerShell
+3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup":  
+    - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
+4. Open GPMC
+5. Verify GPO is restored
 #>
 # Clear Screen
 Clear-Host
