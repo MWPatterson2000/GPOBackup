@@ -14,6 +14,9 @@ Below is a list of the files created from this script:
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.html           - This a backup of all the GPO's in a single file incase you need to look for a setting and do not know which GPO it is on.
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-UnlinkedGPOReport.csv    - This file Contains GPO Information like Name, ID, Status, Creation Time, & Modified Time
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-WMIFiltersExport.csv     - This file Contains WMI Filters Information configured in GPMC
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.csv   - This file Contains list of Orphaned GPOs in SYSVOL
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.csv       - This file Contains list of Orphaned GPOs in AD
 
 
 This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simplier when backup up GPO's
@@ -49,6 +52,7 @@ Revision History
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
     2023-03-16 - Script Cleanup
     2023-08-16 - Adding ability to use 7-Zip from compression
+    2023-08-21 - Added Orphaned GPO Report
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -229,6 +233,13 @@ Else {
     $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated Unlinked GPO Properties Report" -Fore Yellow
+
+
+# Orphaned GPOs
+#<Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
+#<Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.csv   - This file Contains list of Orphaned GPOs in SYSVOL
+#<Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.csv       - This file Contains list of Orphaned GPOs in AD
+
 
 
 # Backup WMI Filters
