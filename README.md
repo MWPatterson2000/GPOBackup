@@ -6,6 +6,7 @@ This script will create GPO Reports to track changes and backup the GPO's so you
 Below is a list of the files created from this script:
 
 - Year-Month-Date-Hour-Minuite-FQDN.zip                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing  
+- Year-Month-Date-Hour-Minuite-FQDN.7z                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing  
 - Year-Month-Date-Hour-Minuite-FQDN-GPOChanges.csv           - This file contains the Changed GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.  
 - Year-Month-Date-Hour-Minuite-FQDN-GPOList.csv              - This file contains GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time  
 - Year-Month-Date-Hour-Minuite-FQDN-GPOReport.csv            - This file Contains GPO Information like Name, Links, Revision Number, & Security Filtering  
@@ -54,17 +55,16 @@ Revision History
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
-- WMI Filter Export
+WMI Filter Export:  
     - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354
-
-- ManageWMIFilters.ps1
-    - Other Parts taken from other scripts on the web
+    - ManageWMIFilters.ps1  
+Other Parts taken from other scripts on the web
 
 This script is for backups.  To restore you can do the following steps
 
 1. Extract the zip file to a location for use
 2. Open Admin PowerShell
-3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup"
+3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup":  
     - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
 4. Open GPMC
 5. Verify GPO is restored
