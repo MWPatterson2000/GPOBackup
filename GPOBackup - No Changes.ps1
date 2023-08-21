@@ -552,12 +552,11 @@ Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
 $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
 $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
-    write-host -ForeGroundColor Green "`tExporting $RowCount WMI Filters"
+    Write-Host "`tExporting $RowCount WMI Filters" -ForeGroundColor Green 
     $WMIFilters | export-csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-    #write-host -ForeGroundColor Green "An export of the WMI Filters has been stored at $backupPath-WMIFiltersExport.csv`n"
     } 
 else {
-    write-host -ForeGroundColor Green "`t`tThere are no WMI Filters to export`n"
+    Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
     } 
 Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
@@ -578,13 +577,13 @@ if ($individualBackup -eq 'Yes'){
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname) # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Server $server -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
-            $filename = join-path $backupPath ($gpo.displayname + ".html") # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
@@ -594,13 +593,13 @@ if ($individualBackup -eq 'Yes'){
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname) # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
-            $filename = join-path $backupPath ($gpo.displayname + ".html") # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
