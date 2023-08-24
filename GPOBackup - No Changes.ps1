@@ -649,7 +649,8 @@ if ((Test-Path $7zipPath) -eq $true) {
     $source = $backupPath
     $destination = $backupPath + ".7z"
     # Compress Files/Folder
-    Compress-7zip a -mx9 -r -tzip $destination $source
+    #Compress-7zip a -mx9 -r -tzip $destination $source
+    Compress-7zip a -mx9 -r -t7z $destination $source
 }
 
 # Compress Folders to Zip File
