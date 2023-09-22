@@ -1,4 +1,4 @@
-﻿<#
+<#
 Name: GPOBackup.ps1
 
 This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
@@ -15,8 +15,8 @@ Below is a list of the files created from this script:
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-UnlinkedGPOReport.csv    - This file Contains GPO Information like Name, ID, Status, Creation Time, & Modified Time
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-WMIFiltersExport.csv     - This file Contains WMI Filters Information configured in GPMC
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.csv   - This file Contains list of Orphaned GPOs in SYSVOL
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.csv       - This file Contains list of Orphaned GPOs in AD
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.txt   - This file Contains list of Orphaned GPOs in SYSVOL
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.txt       - This file Contains list of Orphaned GPOs in AD
 
 
 This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simplier when backup up GPO's
@@ -519,7 +519,8 @@ If ($MissingADGPOsCount -gt 0 ) {
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 # Write Missing GPOs in AD to CSV File
 if ($MissingADGPOs.Count -gt 0) {
-    $MissingADGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsAD.csv -NoTypeInformation
+    #$MissingADGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsAD.csv -NoTypeInformation
+    $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOsAD.txt
 }
 
 # Check for GPCs in AD that don't exist in SYSVOL
@@ -536,7 +537,8 @@ If ($MissingSYSVOLGPOsCount -gt 0 ) {
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 # Write Missing GPOs in SYSVOL to CSV File
 if ($MissingSYSVOLGPOs.Count -gt 0) {
-    $MissingSYSVOLGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsSYSVOL.csv -NoTypeInformation
+    #$MissingSYSVOLGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsSYSVOL.csv -NoTypeInformation
+    $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOsSYSVOL.txt
 }
 
 
@@ -651,8 +653,7 @@ if ((Test-Path $7zipPath) -eq $true) {
     $source = $backupPath
     $destination = $backupPath + ".7z"
     # Compress Files/Folder
-    #Compress-7zip a -mx9 -r -tzip $destination $source # Zip Format
-    Compress-7zip a -mx9 -r -t7z $destination $source # 7z Format
+    Compress-7zip a -mx9 -r -t7z $destination $source
 }
 
 # Compress Folders to Zip File
