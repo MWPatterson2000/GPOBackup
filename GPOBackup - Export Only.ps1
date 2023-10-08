@@ -54,6 +54,7 @@ Revision History
     2023-08-16 - Adding ability to use 7-Zip from compression
     2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
     2023-10-08 - Moved order to longer processing at the end
+    2023-10-09 - Script Optimization
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -144,14 +145,14 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
-    #Get-GPO -All -Server $server | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All -Server $server | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     $Script.GPOs = Get-GPO -All -Server $server
-    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
-    #Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     $Script.GPOs = Get-GPO -All
-    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -166,10 +167,12 @@ function IsNotLinked($xmldata) {
 }
 $unlinkedGPOs = @()
 If ($setServer -eq "Yes") {
-    Get-GPO -All -Server $server | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    #Get-GPO -All -Server $server | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    $Script.GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
 }
 Else {
-    Get-GPO -All | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    #Get-GPO -All | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    $Script.GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
 }
 If ($unlinkedGPOs.Count -eq 0) {
     Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
@@ -257,7 +260,7 @@ $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * |
 $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
     Write-Host "`tExporting $RowCount WMI Filters" -ForeGroundColor Green 
-    $WMIFilters | export-csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
+    $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
 } 
 else {
     Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
