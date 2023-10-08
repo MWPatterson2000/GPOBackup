@@ -53,6 +53,7 @@ Revision History
     2023-03-16 - Script Cleanup
     2023-08-16 - Adding ability to use 7-Zip from compression
     2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
+    2023-10-08 - Moved order to longer processing at the end
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -129,30 +130,6 @@ Else {
     Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
-
-
-# Export GPO Report - XML
-Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
-If ($setServer -eq "Yes") {
-    Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
-}
-Else {
-    Get-GPOReport -All -ReportType xml -Path $backupPath-GPOReport.xml
-}
-Write-Host "`t`tCreated GPO Report - XML" -ForeGroundColor Yellow
-
-
-# Export GPO Report - HTML
-If ($HTMLReport -eq "Yes") {
-    Write-Host "`tPlease Wait - Creating GPO Report - HTML" -ForeGroundColor Yellow
-    If ($setServer -eq "Yes") {
-        Get-GPOReport -All -Server $server -ReportType Html -Path $backupPath-GPOReport.html
-    }
-    Else {
-        Get-GPOReport -All -ReportType Html -Path $backupPath-GPOReport.html
-    }
-    Write-Host "`t`tCreated GPO Report - HTML" -ForeGroundColor Yellow
-}
 
 
 # Export GPO Properties Report
@@ -317,6 +294,30 @@ else {
     Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
 } 
 Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
+
+
+# Export GPO Report - XML
+Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
+If ($setServer -eq "Yes") {
+    Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
+}
+Else {
+    Get-GPOReport -All -ReportType xml -Path $backupPath-GPOReport.xml
+}
+Write-Host "`t`tCreated GPO Report - XML" -ForeGroundColor Yellow
+
+
+# Export GPO Report - HTML
+If ($HTMLReport -eq "Yes") {
+    Write-Host "`tPlease Wait - Creating GPO Report - HTML" -ForeGroundColor Yellow
+    If ($setServer -eq "Yes") {
+        Get-GPOReport -All -Server $server -ReportType Html -Path $backupPath-GPOReport.html
+    }
+    Else {
+        Get-GPOReport -All -ReportType Html -Path $backupPath-GPOReport.html
+    }
+    Write-Host "`t`tCreated GPO Report - HTML" -ForeGroundColor Yellow
+}
 
 
 # Verify GPO BackupPath
