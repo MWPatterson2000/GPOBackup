@@ -75,6 +75,26 @@ This script is for backups.  To restore you can do the following steps:
 # Clear Screen
 Clear-Host
 
+# Funtions
+# Clear Varables
+function Get-UserVariable ($Name = '*') {
+    # these variables may exist in certain environments (like ISE, or after use of foreach)
+    $special = 'ps', 'psise', 'psunsupportedconsoleapplications', 'foreach', 'profile'
+
+    $ps = [PowerShell]::Create()
+    $null = $ps.AddScript('$null=$host;Get-Variable') 
+    $reserved = $ps.Invoke() | 
+    Select-Object -ExpandProperty Name
+    $ps.Runspace.Close()
+    $ps.Dispose()
+    Get-Variable -Scope Global | 
+    Where-Object Name -like $Name |
+    Where-Object { $reserved -notcontains $_.Name } |
+    Where-Object { $special -notcontains $_.Name } |
+    Where-Object Name 
+}
+
+# End Function(s)
 
 # Set Variables
 # HTML Report 
@@ -124,10 +144,14 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
-    Get-GPO -All -Server $server | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All -Server $server | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs = Get-GPO -All -Server $server
+    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
-    Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs = Get-GPO -All
+    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -441,3 +465,11 @@ Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
 
 # Completed Script
 Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
+
+
+# Clear Variables
+Write-Host "`nScript Cleanup"
+Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+
+
+# End

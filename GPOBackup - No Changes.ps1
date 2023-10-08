@@ -69,11 +69,30 @@ This script is for backups.  To restore you can do the following steps:
     - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
 4. Open GPMC
 5. Verify GPO is restored
+
 #>
 # Clear Screen
 Clear-Host
 
 # Funtions
+# Clear Varables
+function Get-UserVariable ($Name = '*') {
+    # these variables may exist in certain environments (like ISE, or after use of foreach)
+    $special = 'ps', 'psise', 'psunsupportedconsoleapplications', 'foreach', 'profile'
+
+    $ps = [PowerShell]::Create()
+    $null = $ps.AddScript('$null=$host;Get-Variable') 
+    $reserved = $ps.Invoke() | 
+    Select-Object -ExpandProperty Name
+    $ps.Runspace.Close()
+    $ps.Dispose()
+    Get-Variable -Scope Global | 
+    Where-Object Name -like $Name |
+    Where-Object { $reserved -notcontains $_.Name } |
+    Where-Object { $special -notcontains $_.Name } |
+    Where-Object Name 
+}
+
 # SharePoint Upload Function
 Function UploadFileInSlice ($ctx, $libraryName, $fileName, $fileChunkSizeInMB) {
     $fileChunkSizeInMB = 9
@@ -219,6 +238,8 @@ Generated on : $today<br /><br />
     $smtpclient.Send($mailmessage) 
 }
 
+# End Function(s)
+
 # Set Variables
 #Configure Email notification recipient
 $smtpserver = "<SMTP Relay Server>"
@@ -330,7 +351,9 @@ $backupPath = $backupFolderPath + $backupFileName
 # Begin Processing GPO's
 # Check if GPO Changes in last Day, Exit if no changes made in last day
 Write-Host "`n`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
-$modifiedGPOs = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }).count
+#$modifiedGPOs = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }).count
+$Script.ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }
+$modifiedGPOs = @($Script.ModifiedGPO).Count
 If ($modifiedGPOs -eq "0") {
     Write-Host "`tNo Changes in last Day" -ForeGroundColor Green
     #Exit   #Exit if no changes made in last day
@@ -347,7 +370,8 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 
 # Generate List of changes
 Write-Host "`n`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
-Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) } | Export-csv $backupPath-GPOChanges.csv -NoTypeInformation
+#Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) } | Export-csv $backupPath-GPOChanges.csv -NoTypeInformation
+$Script.ModifiedGPO | Export-csv $backupPath-GPOChanges.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
 
 
@@ -362,10 +386,14 @@ if ($sendEmail -eq "Yes") {
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
-    Get-GPO -All -Server $server| Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All -Server $server | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs = Get-GPO -All -Server $server
+    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
-    Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    #Get-GPO -All | Export-csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script.GPOs = Get-GPO -All
+    $Script.GPOs | Export-csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -766,3 +794,11 @@ if ($useMapShare -eq "Yes") {
 
 # Completed Script
 Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
+
+
+# Clear Variables
+Write-Host "`nScript Cleanup"
+Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+
+
+# End
