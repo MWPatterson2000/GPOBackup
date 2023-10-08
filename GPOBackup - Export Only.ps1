@@ -146,13 +146,13 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     #Get-GPO -All -Server $server | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
-    $Script.GPOs = Get-GPO -All -Server $server
-    $Script.GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script:GPOs = Get-GPO -All -Server $server
+    $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
     #Get-GPO -All | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
-    $Script.GPOs = Get-GPO -All
-    $Script.GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
+    $Script:GPOs = Get-GPO -All
+    $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -168,11 +168,11 @@ function IsNotLinked($xmldata) {
 $unlinkedGPOs = @()
 If ($setServer -eq "Yes") {
     #Get-GPO -All -Server $server | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
-    $Script.GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    $Script:GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
 }
 Else {
     #Get-GPO -All | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
-    $Script.GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
+    $Script:GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
 }
 If ($unlinkedGPOs.Count -eq 0) {
     Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
@@ -271,10 +271,12 @@ Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 # Export GPO Properties Report
 Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
-    $GPOList = (Get-Gpo -All -Server $server).DisplayName
+    #$GPOList = (Get-Gpo -All -Server $server).DisplayName
+    $GPOList = ($Script:GPOs).DisplayName
 }
 Else {
-    $GPOList = (Get-Gpo -All).DisplayName
+    #$GPOList = (Get-Gpo -All).DisplayName
+    $GPOList = ($Script:GPOs).DisplayName    
 }
 $colGPOLinks = @()
 foreach ($GPOItem in $GPOList) {
