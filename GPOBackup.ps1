@@ -371,61 +371,6 @@ Else {
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
 
-# Export GPO Properties Report
-Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
-If ($setServer -eq "Yes") {
-    $GPOList = (Get-Gpo -All -Server $server).DisplayName
-}
-Else {
-    $GPOList = (Get-Gpo -All).DisplayName
-}
-$colGPOLinks = @()
-foreach ($GPOItem in $GPOList) {
-    If ($setServer -eq "Yes") {
-        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml -Server $server
-        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        $Wmi = Get-GPO $GPOItem -Server $server | Select-Object WmiFilter
-    }
-    Else {
-        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml
-        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        $Wmi = Get-GPO $GPOItem | Select-Object WmiFilter
-    }
-    $CreatedTime = $gpocontent.GPO.CreatedTime
-    $ModifiedTime = $gpocontent.GPO.ModifiedTime
-    $CompVerDir = $gpocontent.GPO.Computer.VersionDirectory
-    $CompVerSys = $gpocontent.GPO.Computer.VersionSysvol
-    $CompEnabled = $gpocontent.GPO.Computer.Enabled
-    $UserVerDir = $gpocontent.GPO.User.VersionDirectory
-    $UserVerSys = $gpocontent.GPO.User.VersionSysvol
-    $UserEnabled = $gpocontent.GPO.User.Enabled
-    If ($setServer -eq "Yes") {
-        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
-    }
-    Else {
-        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
-    }
-    foreach ($LinksPath in $LinksPaths) {
-        $objGPOLinks = New-Object System.Object
-        $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $GPOItem
-        $objGPOLinks | Add-Member -type noteproperty -name LinksPath -value $LinksPath
-        $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($wmi.WmiFilter).Name
-        $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
-        $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
-        $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsAD -value $CompVerDir
-        $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsSYSVOL -value $CompVerSys
-        $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsAD -value $UserVerDir
-        $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsSYSVOL -value $UserVerSys
-        $objGPOLinks | Add-Member -type noteproperty -name ComputerSettingsEnabled -value $CompEnabled
-        $objGPOLinks | Add-Member -type noteproperty -name UserSettingsEnabled -value $UserEnabled
-        $objGPOLinks | Add-Member -type noteproperty -name SecurityFilter -value $SecurityFilter
-        $colGPOLinks += $objGPOLinks
-    }
-}
-$colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
-Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
-
-
 # Export Unlinked GPO Report
 Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
 function IsNotLinked($xmldata) {
@@ -533,6 +478,61 @@ else {
     Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green
     } 
 Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
+
+
+# Export GPO Properties Report
+Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
+If ($setServer -eq "Yes") {
+    $GPOList = (Get-Gpo -All -Server $server).DisplayName
+}
+Else {
+    $GPOList = (Get-Gpo -All).DisplayName
+}
+$colGPOLinks = @()
+foreach ($GPOItem in $GPOList) {
+    If ($setServer -eq "Yes") {
+        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml -Server $server
+        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
+        $Wmi = Get-GPO $GPOItem -Server $server | Select-Object WmiFilter
+    }
+    Else {
+        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml
+        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
+        $Wmi = Get-GPO $GPOItem | Select-Object WmiFilter
+    }
+    $CreatedTime = $gpocontent.GPO.CreatedTime
+    $ModifiedTime = $gpocontent.GPO.ModifiedTime
+    $CompVerDir = $gpocontent.GPO.Computer.VersionDirectory
+    $CompVerSys = $gpocontent.GPO.Computer.VersionSysvol
+    $CompEnabled = $gpocontent.GPO.Computer.Enabled
+    $UserVerDir = $gpocontent.GPO.User.VersionDirectory
+    $UserVerSys = $gpocontent.GPO.User.VersionSysvol
+    $UserEnabled = $gpocontent.GPO.User.Enabled
+    If ($setServer -eq "Yes") {
+        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+    }
+    Else {
+        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+    }
+    foreach ($LinksPath in $LinksPaths) {
+        $objGPOLinks = New-Object System.Object
+        $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $GPOItem
+        $objGPOLinks | Add-Member -type noteproperty -name LinksPath -value $LinksPath
+        $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($wmi.WmiFilter).Name
+        $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
+        $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
+        $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsAD -value $CompVerDir
+        $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsSYSVOL -value $CompVerSys
+        $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsAD -value $UserVerDir
+        $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsSYSVOL -value $UserVerSys
+        $objGPOLinks | Add-Member -type noteproperty -name ComputerSettingsEnabled -value $CompEnabled
+        $objGPOLinks | Add-Member -type noteproperty -name UserSettingsEnabled -value $UserEnabled
+        $objGPOLinks | Add-Member -type noteproperty -name SecurityFilter -value $SecurityFilter
+        $colGPOLinks += $objGPOLinks
+    }
+}
+$colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
+Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
 
 
 # Export GPO Report - XML
