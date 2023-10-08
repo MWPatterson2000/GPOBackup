@@ -1,7 +1,7 @@
 <#
-Name: GPOBackup.ps1
+Name: GPOBackup - No Changes.ps1
 
-This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
+This script will export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
