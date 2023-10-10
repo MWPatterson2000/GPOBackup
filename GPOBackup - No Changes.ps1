@@ -510,18 +510,16 @@ Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
 If ($setServer -eq "Yes") {
     foreach ($gpo in $Script:GPOs) {
-        $checkGPO = Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml
-        $checkGPOcount = ([string]$checkGPO | find  "No settings defined.").count
-        if($checkGPOcount -eq 2) {
+        if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            write-host $gpo.DisplayName is empty
             $emptyGPOs += $gpo
         }
     }
 }
 Else {
     foreach ($gpo in $Script:GPOs) {
-        $checkGPO = Get-GPOReport -Guid $gpo.Id -ReportType xml
-        $checkGPOcount = ([string]$checkGPO | find  "No settings defined.").count
-        if($checkGPOcount -eq 2) {
+        if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            write-host $gpo.DisplayName is empty
             $emptyGPOs += $gpo
         }
     }
@@ -531,8 +529,8 @@ If ($emptyGPOs.Count -eq 0) {
 }
 Else {
     $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyPOReport.csv -NoTypeInformation
+    Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
-Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 
 
 # Backup WMI Filters
