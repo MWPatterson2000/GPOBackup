@@ -473,8 +473,9 @@ Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
 
 
 # Clear Variables
-Write-Host "`nScript Cleanup"
+Write-Host "`tScript Cleanup"
 Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
 
 
 # End
+Exit
