@@ -511,7 +511,6 @@ $emptyGPOs = @()
 If ($setServer -eq "Yes") {
     foreach ($gpo in $Script:GPOs) {
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
-            #write-host $gpo.DisplayName is empty
             $emptyGPOs += $gpo
         }
     }
@@ -519,7 +518,6 @@ If ($setServer -eq "Yes") {
 Else {
     foreach ($gpo in $Script:GPOs) {
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
-            #write-host $gpo.DisplayName is empty
             $emptyGPOs += $gpo
         }
     }
