@@ -361,7 +361,7 @@ if ($individualBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         #$allGPOs = get-gpo -all -Server $server
-        $allGPOs = $Script:GPO
+        $allGPOs = $Script:GPOs
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
@@ -382,7 +382,7 @@ if ($individualBackup -eq 'Yes') {
     }
     Else {
         #$allGPOs = get-gpo -all
-        $allGPOs = $Script:GPO
+        $allGPOs = $Script:GPOs
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
