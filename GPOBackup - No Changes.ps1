@@ -768,7 +768,7 @@ If ($deleteOlder -eq 'Yes') {
 # Complete if not moving off of System
 if ($moveBackups -eq "No") {
     Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
-    Write-Host "`tScript Cleanup"
+    Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
     Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
     Exit
 }
@@ -804,7 +804,7 @@ Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
 
 
 # Clear Variables
-Write-Host "`tScript Cleanup"
+Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
 Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
 
 
