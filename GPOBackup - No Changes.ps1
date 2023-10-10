@@ -359,8 +359,8 @@ $Script:ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Ge
 $modifiedGPOs = @($Script:ModifiedGPO).Count
 If ($modifiedGPOs -eq "0") {
     Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
-    Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
-    Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+    #Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+    #Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
     #Exit   #Exit if no changes made in last day
 }
 Write-Host "`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
