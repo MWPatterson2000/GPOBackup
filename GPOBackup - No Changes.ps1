@@ -353,15 +353,17 @@ $backupPath = $backupFolderPath + $backupFileName
 
 # Begin Processing GPO's
 # Check if GPO Changes in last Day, Exit if no changes made in last day
-Write-Host "`n`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
 #$modifiedGPOs = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }).count
 $Script:ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }
 $modifiedGPOs = @($Script:ModifiedGPO).Count
 If ($modifiedGPOs -eq "0") {
-    Write-Host "`tNo Changes in last Day" -ForeGroundColor Green
+    Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
+    Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+    Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
     #Exit   #Exit if no changes made in last day
 }
-Write-Host "`n`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+Write-Host "`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
 Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -ForeGroundColor Yellow
 
 
@@ -372,7 +374,7 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 
 
 # Generate List of changes
-Write-Host "`n`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
+Write-Host "`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
 #Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) } | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
 $Script:ModifiedGPO | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
