@@ -17,6 +17,7 @@ Below is a list of the files created from this script:
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.txt   - This file Contains list of Orphaned GPOs in SYSVOL
     <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.txt       - This file Contains list of Orphaned GPOs in AD
+    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-EmptyPOReport.csv        - This file Contains list of Empty GPOs in AD
 
 
 This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simplier when backup up GPO's
@@ -55,6 +56,7 @@ Revision History
     2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
     2023-10-08 - Moved order to longer processing at the end
     2023-10-09 - Script Optimization
+    2023-10-10 - Added EmptyPOReport.csv
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -259,6 +261,36 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
     #$MissingSYSVOLGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsSYSVOL.csv -NoTypeInformation
     $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOsSYSVOL.txt
 }
+
+
+# Empty GPO's
+Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
+$emptyGPOs = @()
+If ($setServer -eq "Yes") {
+    foreach ($gpo in $Script:GPOs) {
+        $checkGPO = Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml
+        $checkGPOcount = ([string]$checkGPO | find  "No settings defined.").count
+        if($checkGPOcount -eq 2) {
+            $emptyGPOs += $gpo
+        }
+    }
+}
+Else {
+    foreach ($gpo in $Script:GPOs) {
+        $checkGPO = Get-GPOReport -Guid $gpo.Id -ReportType xml
+        $checkGPOcount = ([string]$checkGPO | find  "No settings defined.").count
+        if($checkGPOcount -eq 2) {
+            $emptyGPOs += $gpo
+        }
+    }
+}
+If ($emptyGPOs.Count -eq 0) {
+    Write-Host "`t`tNo Empty GPO's Found" -ForeGroundColor Green
+}
+Else {
+    $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyPOReport.csv -NoTypeInformation
+}
+Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 
 
 # Backup WMI Filters
