@@ -602,7 +602,8 @@ if ((Test-Path $backupPath) -eq $false) {
 if ($individualBackup -eq 'Yes'){
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
-        $allGPOs = get-gpo -all -Server $server
+        #$allGPOs = get-gpo -all -Server $server
+        $allGPOs = $Script:GPO
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
@@ -614,14 +615,14 @@ if ($individualBackup -eq 'Yes'){
             }
             Backup-GPO -Server $server -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
-            #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
             $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}" + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
     Else {
-        $allGPOs = get-gpo -all
+        #$allGPOs = get-gpo -all
+        $allGPOs = $Script:GPO
         foreach ($gpo in $allGPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
