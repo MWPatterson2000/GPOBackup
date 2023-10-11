@@ -468,11 +468,9 @@ Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
 # Completed Script
 Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
 
-
 # Clear Variables
 Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
 Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
-
 
 # End
 Exit
