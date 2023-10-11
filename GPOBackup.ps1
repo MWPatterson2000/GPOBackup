@@ -401,35 +401,6 @@ Else {
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
 
-# Export Unlinked GPO Report
-Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
-function IsNotLinked($xmldata) {
-    If ($null -eq $xmldata.GPO.LinksTo) {
-        Return $true
-    }
-    Return $false
-}
-$unlinkedGPOs = @()
-If ($setServer -eq "Yes") {
-    foreach ($gpo in $Script:GPOs) {
-        Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-    }
-}
-Else {
-    foreach ($gpo in $Script:GPOs) {
-        Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-    }
-
-}
-If ($unlinkedGPOs.Count -eq 0) {
-    Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
-}
-Else {
-    $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
-}
-Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
-
-
 # Orphaned GPOs
 Write-Host "`tPlease Wait - Creating Orphaned GPO Properties Reports" -ForeGroundColor Yellow
 $Domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
@@ -497,6 +468,35 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 }
 
 
+# Export Unlinked GPO Report
+Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
+function IsNotLinked($xmldata) {
+    If ($null -eq $xmldata.GPO.LinksTo) {
+        Return $true
+    }
+    Return $false
+}
+$unlinkedGPOs = @()
+If ($setServer -eq "Yes") {
+    foreach ($gpo in $Script:GPOs) {
+        Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
+    }
+}
+Else {
+    foreach ($gpo in $Script:GPOs) {
+        Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
+    }
+
+}
+If ($unlinkedGPOs.Count -eq 0) {
+    Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
+}
+Else {
+    $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
+}
+Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
+
+
 # Empty GPO's
 Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
@@ -523,20 +523,6 @@ Else {
     $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyPOReport.csv -NoTypeInformation
     Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
-
-
-# Backup WMI Filters
-Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
-$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
-$RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
-if ($RowCount -ne 0) {
-    write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
-    $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-} 
-else {
-    Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
-} 
-Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 
 # Export GPO Properties Report
@@ -585,6 +571,20 @@ foreach ($gpo in $Script:GPOs) {
 }
 $colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
+
+
+# Backup WMI Filters
+Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
+$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
+$RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
+if ($RowCount -ne 0) {
+    write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
+    $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
+} 
+else {
+    Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
+} 
+Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 
 # Export GPO Report - XML
