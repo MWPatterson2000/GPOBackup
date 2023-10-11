@@ -469,11 +469,15 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 
 
 # Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
-Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
+Write-Host "`tPlease Wait - Working on the Following:" -ForeGroundColor Yellow
+#Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
+Write-Host "`t`tChecking for Unlinked GPO's" -ForeGroundColor Yellow
 $unlinkedGPOs = @()
-Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
+#Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
+Write-Host "`t`tChecking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
-Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
+#Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
+Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
 $colGPOLinks = @()
 foreach ($gpo in $Script:GPOs) {
     If ($setServer -eq "Yes") {
