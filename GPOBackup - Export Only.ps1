@@ -239,21 +239,15 @@ $colGPOLinks = @()
 foreach ($gpo in $Script:GPOs) {
     If ($setServer -eq "Yes") {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
-        If ($NULL -eq $gpocontent.GPO.LinksTo) {
-            $unlinkedGPOs += $gpo
-        }
-        If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
-            $emptyGPOs += $gpo
-        }
     }
     Else {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
-        If ($NULL -eq $gpocontent.GPO.LinksTo) {
-            $unlinkedGPOs += $gpo
-        }
-        If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
-            $emptyGPOs += $gpo
-        }
+    }
+    If ($NULL -eq $gpocontent.GPO.LinksTo) {
+        $unlinkedGPOs += $gpo
+    }
+    If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
+        $emptyGPOs += $gpo
     }
     $LinksPaths = $gpocontent.GPO.LinksTo
     $CreatedTime = $gpocontent.GPO.CreatedTime
