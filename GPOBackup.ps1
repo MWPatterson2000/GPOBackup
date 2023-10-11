@@ -512,14 +512,26 @@ Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
 If ($setServer -eq "Yes") {
     foreach ($gpo in $Script:GPOs) {
+        <#
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            $emptyGPOs += $gpo
+        }
+        #>
+        [xml]$Report = Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml
+        If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
     }
 }
 Else {
     foreach ($gpo in $Script:GPOs) {
+        <#
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            $emptyGPOs += $gpo
+        }
+        #>
+        [xml]$Report = Get-GPOReport -Guid $gpo.Id -ReportType xml
+        If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
     }
@@ -531,6 +543,7 @@ Else {
     $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyPOReport.csv -NoTypeInformation
     Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
+
 
 
 

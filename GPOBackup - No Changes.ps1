@@ -512,14 +512,26 @@ Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
 If ($setServer -eq "Yes") {
     foreach ($gpo in $Script:GPOs) {
+        <#
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            $emptyGPOs += $gpo
+        }
+        #>
+        [xml]$Report = Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml
+        If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
     }
 }
 Else {
     foreach ($gpo in $Script:GPOs) {
+        <#
         if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
+            $emptyGPOs += $gpo
+        }
+        #>
+        [xml]$Report = Get-GPOReport -Guid $gpo.Id -ReportType xml
+        If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
     }
@@ -542,10 +554,10 @@ $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
     Write-Host "`tExporting $RowCount WMI Filters" -ForeGroundColor Green 
     $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-    } 
+} 
 else {
     Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
-    } 
+} 
 Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 
@@ -638,7 +650,7 @@ if ((Test-Path $backupPath) -eq $false) {
 
 
 # Backup GPOs into named folders
-if ($individualBackup -eq 'Yes'){
+if ($individualBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         #$allGPOs = get-gpo -all -Server $server
@@ -648,14 +660,14 @@ if ($individualBackup -eq 'Yes'){
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             #$foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Server $server -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
-            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}" + ".html") # Raw Name # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
@@ -667,14 +679,14 @@ if ($individualBackup -eq 'Yes'){
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             #$foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
-            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}" + ".html") # Raw Name # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
@@ -684,7 +696,7 @@ if ($individualBackup -eq 'Yes'){
 
 #<#
 # Backup All GPOs into one folder
-if ($singleBackup -eq 'Yes'){
+if ($singleBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         $foldername = join-path $backupPath + "_All"
@@ -763,7 +775,7 @@ if ($useSharePoint -eq "Yes") {
     Add-Type -Path "C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\16\ISAPI\Microsoft.SharePoint.Client.Runtime.dll"
 
     # Specify username site URL
-    $User = $env:username +"@<Domain>"
+    $User = $env:username + "@<Domain>"
 
     # Get Password
     $Credentials = Get-Credential "$User" -ErrorAction Stop
