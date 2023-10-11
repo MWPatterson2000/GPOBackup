@@ -149,12 +149,11 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     $Script:GPOs = Get-GPO -All -Server $server
-    $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
     $Script:GPOs = Get-GPO -All
-    $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
+$Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
 
@@ -227,13 +226,10 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 
 # Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
 Write-Host "`tPlease Wait - Working on the Following:" -ForeGroundColor Yellow
-#Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
 Write-Host "`t`tChecking for Unlinked GPO's" -ForeGroundColor Yellow
 $unlinkedGPOs = @()
-#Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 Write-Host "`t`tChecking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
-#Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
 $colGPOLinks = @()
 foreach ($gpo in $Script:GPOs) {
