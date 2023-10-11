@@ -1,7 +1,7 @@
 <#
 Name: GPOBackup.ps1
 
-This script will check for GPO's modified in the last day and then only export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
+This script will export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
 This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
 Below is a list of the files created from this script:
@@ -56,6 +56,7 @@ Revision History
     2023-10-08 - Moved order to longer processing at the end
     2023-10-09 - Script Optimization
     2023-10-10 - Added EmptyPOReport.csv
+    2023-10-11 - Cleanup
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -375,7 +376,6 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 
 # Generate List of changes
 Write-Host "`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
-#Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) } | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
 $Script:ModifiedGPO | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
 
@@ -391,12 +391,10 @@ if ($sendEmail -eq "Yes") {
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
-    #Get-GPO -All -Server $server | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     $Script:GPOs = Get-GPO -All -Server $server
     $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
 Else {
-    #Get-GPO -All | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     $Script:GPOs = Get-GPO -All
     $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
 }
@@ -413,18 +411,12 @@ function IsNotLinked($xmldata) {
 }
 $unlinkedGPOs = @()
 If ($setServer -eq "Yes") {
-    #Get-GPO -All -Server $server | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
-    #$Script:GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
     foreach ($gpo in $Script:GPOs) {
-        #Get-GPOReport -Name $gpo.displayname -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
         Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
     }
 }
 Else {
-    #Get-GPO -All | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
-    #$Script:GPOs | ForEach-Object { $gpo = $_ ; $_ | Get-GPOReport -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } } }
     foreach ($gpo in $Script:GPOs) {
-        #Get-GPOReport -Name $gpo.displayname -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
         Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
     }
 
@@ -484,7 +476,6 @@ If ($MissingADGPOsCount -gt 0 ) {
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 # Write Missing GPOs in AD to CSV File
 if ($MissingADGPOs.Count -gt 0) {
-    #$MissingADGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsAD.csv -NoTypeInformation
     $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOsAD.txt
 }
 
@@ -502,7 +493,6 @@ If ($MissingSYSVOLGPOsCount -gt 0 ) {
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 # Write Missing GPOs in SYSVOL to CSV File
 if ($MissingSYSVOLGPOs.Count -gt 0) {
-    #$MissingSYSVOLGPOs | Export-Csv -Delimiter ',' -Path $backupPath-OrphanedGPOsSYSVOL.csv -NoTypeInformation
     $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOsSYSVOL.txt
 }
 
@@ -512,11 +502,6 @@ Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
 $emptyGPOs = @()
 If ($setServer -eq "Yes") {
     foreach ($gpo in $Script:GPOs) {
-        <#
-        if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
-            $emptyGPOs += $gpo
-        }
-        #>
         [xml]$Report = Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml
         If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
@@ -525,11 +510,6 @@ If ($setServer -eq "Yes") {
 }
 Else {
     foreach ($gpo in $Script:GPOs) {
-        <#
-        if ($gpo.Computer.DSVersion -eq 0 -and $gpo.User.DSVersion -eq 0) {
-            $emptyGPOs += $gpo
-        }
-        #>
         [xml]$Report = Get-GPOReport -Guid $gpo.Id -ReportType xml
         If ($NULL -eq $Report.GPO.Computer.ExtensionData -and $NULL -eq $Report.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
@@ -545,48 +525,31 @@ Else {
 }
 
 
-
-
 # Backup WMI Filters
 Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
-#$WMIFilters = @()
-#$WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select DistinguishedName, whenCreated, whenChanged, msWMI-Author, msWMI-ID, msWMI-Name, msWMI-Parm1, msWMI-Parm2
 $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
 $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
     write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
     $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-    } 
+} 
 else {
-    Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green
-    } 
+    Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
+} 
 Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 
 # Export GPO Properties Report
 Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
-If ($setServer -eq "Yes") {
-    #$GPOList = (Get-Gpo -All -Server $server).DisplayName
-    #$GPOList = ($Script:GPOs).DisplayName
-}
-Else {
-    #$GPOList = (Get-Gpo -All).DisplayName
-    #$GPOList = ($Script:GPOs).DisplayName    
-}
 $colGPOLinks = @()
-#foreach ($GPOItem in $GPOList) {
 foreach ($gpo in $Script:GPOs) {
     If ($setServer -eq "Yes") {
-        #[xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml -Server $server
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
         $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        #$Wmi = Get-GPO $GPOItem -Server $server | Select-Object WmiFilter
     }
     Else {
-        #[xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
         $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        #$Wmi = Get-GPO $GPOItem | Select-Object WmiFilter
     }
     $CreatedTime = $gpocontent.GPO.CreatedTime
     $ModifiedTime = $gpocontent.GPO.ModifiedTime
@@ -597,20 +560,16 @@ foreach ($gpo in $Script:GPOs) {
     $UserVerSys = $gpocontent.GPO.User.VersionSysvol
     $UserEnabled = $gpocontent.GPO.User.Enabled
     If ($setServer -eq "Yes") {
-        #$SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
         $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
     }
     Else {
-        #$SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
         $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
     }
     foreach ($LinksPath in $LinksPaths) {
         $objGPOLinks = New-Object System.Object
-        #$objGPOLinks | Add-Member -type noteproperty -name GPOName -value $GPOItem
         $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $gpo.DisplayName
         $objGPOLinks | Add-Member -type noteproperty -name ID -value $gpo.Id
         $objGPOLinks | Add-Member -type noteproperty -name LinksPath -value $LinksPath
-        #$objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($wmi.WmiFilter).Name
         $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($gpo.WmiFilter).Name
         $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
         $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
@@ -660,43 +619,39 @@ if ((Test-Path $backupPath) -eq $false) {
 
 
 # Backup GPOs into named folders
-if ($individualBackup -eq 'Yes'){
+if ($individualBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
-        #$allGPOs = get-gpo -all -Server $server
-        $allGPOs = $Script:GPOs
-        foreach ($gpo in $allGPOs) {
+        foreach ($gpo in $Script:GPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             #$foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Server $server -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
-            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}" + ".html") # Raw Name # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
     Else {
-        #$allGPOs = get-gpo -all
-        $allGPOs = $Script:GPOs
-        foreach ($gpo in $allGPOs) {
+        foreach ($gpo in $Script:GPOs) {
             Write-Host "`t`tProcessing GPO" $gpo.displayname -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.displayname + "_{" + $gpo.Id + "}") # Keep " "
             #$foldername = join-path $backupPath ($gpo.displayname) # Raw Name # Keep " "
-            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}") # Keep " "
+            $foldername = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
             Backup-GPO -Name $gpo.displayname -Path $foldername -Comment $date
             #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
-            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0,14) + "}" + ".html") # Raw Name # Keep " "
+            $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
             Get-GPOReport -Name $gpo.displayname -ReportType 'HTML'-Path $filename
         }
     }
@@ -706,7 +661,7 @@ if ($individualBackup -eq 'Yes'){
 
 #<#
 # Backup All GPOs into one folder
-if ($singleBackup -eq 'Yes'){
+if ($singleBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     If ($setServer -eq "Yes") {
         $foldername = join-path $backupPath + "_All"
@@ -785,7 +740,7 @@ if ($useSharePoint -eq "Yes") {
     Add-Type -Path "C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\16\ISAPI\Microsoft.SharePoint.Client.Runtime.dll"
 
     # Specify username site URL
-    $User = $env:username +"@<Domain>"
+    $User = $env:username + "@<Domain>"
 
     # Get Password
     $Credentials = Get-Credential "$User" -ErrorAction Stop
