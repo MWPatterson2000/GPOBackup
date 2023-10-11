@@ -468,28 +468,6 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 }
 
 
-function IsNotLinked($xmldata) {
-    If ($null -eq $xmldata.GPO.LinksTo) {
-        Return $true
-    }
-    Return $false
-}
-foreach ($gpo in $Script:GPOs) {
-    If ($setServer -eq "Yes") {
-        #Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-        [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
-
-    }
-    Else {
-        #Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-        [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
-        If ($NULL -eq $gpocontent.GPO.LinksTo) {
-            $unlinkedGPOs += $gpo
-        }
-    }
-}
-
-
 # Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
 Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
 $unlinkedGPOs = @()
