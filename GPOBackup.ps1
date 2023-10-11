@@ -468,40 +468,19 @@ if ($MissingSYSVOLGPOs.Count -gt 0) {
 }
 
 
-# Export Unlinked GPO Report
+# Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
 Write-Host "`tPlease Wait - Creating Unlinked GPO Properties Report" -ForeGroundColor Yellow
-function IsNotLinked($xmldata) {
-    If ($null -eq $xmldata.GPO.LinksTo) {
-        Return $true
-    }
-    Return $false
-}
 $unlinkedGPOs = @()
-foreach ($gpo in $Script:GPOs) {
-    If ($setServer -eq "Yes") {
-        Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-    }
-    Else {
-        Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
-    }
-}
-If ($unlinkedGPOs.Count -eq 0) {
-    Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
-}
-Else {
-    $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
-}
-Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
-
-
-# Empty GPO's & GPO Properties Report
 Write-Host "`tPlease Wait - Checking for Empty GPO's" -ForeGroundColor Yellow
-Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 $emptyGPOs = @()
+Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 $colGPOLinks = @()
 foreach ($gpo in $Script:GPOs) {
     If ($setServer -eq "Yes") {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
+        If ($NULL -eq $gpocontent.GPO.LinksTo) {
+            $unlinkedGPOs += $gpo
+        }
         If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
@@ -509,6 +488,9 @@ foreach ($gpo in $Script:GPOs) {
     }
     Else {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
+        If ($NULL -eq $gpocontent.GPO.LinksTo) {
+            $unlinkedGPOs += $gpo
+        }
         If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
@@ -546,6 +528,15 @@ foreach ($gpo in $Script:GPOs) {
         $colGPOLinks += $objGPOLinks
     }
 }
+# Export Unlinked GPO Report
+If ($unlinkedGPOs.Count -eq 0) {
+    Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
+}
+Else {
+    $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
+}
+Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
+# Empty GPO's
 If ($emptyGPOs.Count -eq 0) {
     Write-Host "`t`tNo Empty GPO's Found" -ForeGroundColor Green
 }
@@ -553,9 +544,9 @@ Else {
     $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyPOReport.csv -NoTypeInformation
     Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
+# GPO Properties Report
 $colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
-
 
 
 # Backup WMI Filters
