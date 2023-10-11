@@ -567,23 +567,26 @@ Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 Write-Host "`tPlease Wait - Creating GPO Properties Report" -ForeGroundColor Yellow
 If ($setServer -eq "Yes") {
     #$GPOList = (Get-Gpo -All -Server $server).DisplayName
-    $GPOList = ($Script:GPOs).DisplayName
+    #$GPOList = ($Script:GPOs).DisplayName
 }
 Else {
     #$GPOList = (Get-Gpo -All).DisplayName
-    $GPOList = ($Script:GPOs).DisplayName    
+    #$GPOList = ($Script:GPOs).DisplayName    
 }
 $colGPOLinks = @()
-foreach ($GPOItem in $GPOList) {
+#foreach ($GPOItem in $GPOList) {
+foreach ($gpo in $Script:GPOs) {
     If ($setServer -eq "Yes") {
-        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml -Server $server
+        #[xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml -Server $server
+        [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
         $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        $Wmi = Get-GPO $GPOItem -Server $server | Select-Object WmiFilter
+        #$Wmi = Get-GPO $GPOItem -Server $server | Select-Object WmiFilter
     }
     Else {
-        [xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml
+        #[xml]$gpocontent = Get-GPOReport $GPOItem -ReportType xml
+        [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
         $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
-        $Wmi = Get-GPO $GPOItem | Select-Object WmiFilter
+        #$Wmi = Get-GPO $GPOItem | Select-Object WmiFilter
     }
     $CreatedTime = $gpocontent.GPO.CreatedTime
     $ModifiedTime = $gpocontent.GPO.ModifiedTime
@@ -594,16 +597,21 @@ foreach ($GPOItem in $GPOList) {
     $UserVerSys = $gpocontent.GPO.User.VersionSysvol
     $UserEnabled = $gpocontent.GPO.User.Enabled
     If ($setServer -eq "Yes") {
-        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+        #$SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
     }
     Else {
-        $SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+        #$SecurityFilter = ((Get-GPPermissions -Name $GPOItem -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
     }
     foreach ($LinksPath in $LinksPaths) {
         $objGPOLinks = New-Object System.Object
-        $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $GPOItem
+        #$objGPOLinks | Add-Member -type noteproperty -name GPOName -value $GPOItem
+        $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $gpo.DisplayName
+        $objGPOLinks | Add-Member -type noteproperty -name ID -value $gpo.Id
         $objGPOLinks | Add-Member -type noteproperty -name LinksPath -value $LinksPath
-        $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($wmi.WmiFilter).Name
+        #$objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($wmi.WmiFilter).Name
+        $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($gpo.WmiFilter).Name
         $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
         $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
         $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsAD -value $CompVerDir
