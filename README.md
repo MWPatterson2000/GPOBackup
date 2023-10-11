@@ -53,6 +53,9 @@ Revision History
 - 2023-08-16 - Adding ability to use 7-Zip from compression
 - 2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
 - 2023-10-08 - Moved order to longer processing at the end
+- 2023-10-09 - Script Optimization
+- 2023-10-10 - Added EmptyPOReport.csv
+
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
