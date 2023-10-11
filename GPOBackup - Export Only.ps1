@@ -358,6 +358,7 @@ if ($individualBackup -eq 'Yes') {
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
+        #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}" + ".html") # Replace " " with "_"
         #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
         #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
         $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "

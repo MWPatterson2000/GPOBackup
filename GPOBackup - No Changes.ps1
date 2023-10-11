@@ -600,6 +600,7 @@ if ($individualBackup -eq 'Yes') {
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
+        #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + "_{" + $gpo.Id + "}" + ".html") # Replace " " with "_"
         #$filename = join-path $backupPath ($gpo.displayname.Replace(" ", "_") + ".html") # Replace " " with "_"
         #$filename = join-path $backupPath ($gpo.displayname + ".html") # Raw Name # Keep " "
         $filename = join-path $backupPath ($gpo.displayname + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
@@ -616,7 +617,6 @@ if ($individualBackup -eq 'Yes') {
 }
 
 
-#<#
 # Backup All GPOs into one folder
 if ($singleBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
@@ -637,7 +637,6 @@ if ($singleBackup -eq 'Yes') {
         Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 }
-#>
 
 
 # Backup PolicyDefinition Folder
