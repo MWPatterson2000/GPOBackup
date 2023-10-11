@@ -17,6 +17,8 @@ Below is a list of the files created from this script:
 - Year-Month-Date-Hour-Minuite-FQDN-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report  
 - Year-Month-Date-Hour-Minuite-FQDN-OrphanedGPOsSYSVOL.csv   - This file Contains list of Orphaned GPOs in SYSVOL  
 - Year-Month-Date-Hour-Minuite-FQDN-OrphanedGPOsAD.csv       - This file Contains list of Orphaned GPOs in AD  
+- Year-Month-Date-Hour-Minuite-FQDN-EmptyPOReport.csv        - This file Contains list of Empty GPOs in AD
+
 
 This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simpler when backup up GPO's
 
