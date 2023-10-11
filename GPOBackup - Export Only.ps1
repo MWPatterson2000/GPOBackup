@@ -234,16 +234,13 @@ function IsNotLinked($xmldata) {
     Return $false
 }
 $unlinkedGPOs = @()
-If ($setServer -eq "Yes") {
-    foreach ($gpo in $Script:GPOs) {
+foreach ($gpo in $Script:GPOs) {
+    If ($setServer -eq "Yes") {
         Get-GPOReport -Guid $gpo.Id -Server $server -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
     }
-}
-Else {
-    foreach ($gpo in $Script:GPOs) {
+    Else {
         Get-GPOReport -Guid $gpo.Id -ReportType xml | ForEach-Object { If (IsNotLinked([xml]$_)) { $unlinkedGPOs += $gpo } }
     }
-
 }
 If ($unlinkedGPOs.Count -eq 0) {
     Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
