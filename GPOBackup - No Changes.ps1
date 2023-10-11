@@ -488,7 +488,6 @@ foreach ($gpo in $Script:GPOs) {
         If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
-        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
     }
     Else {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
@@ -498,8 +497,8 @@ foreach ($gpo in $Script:GPOs) {
         If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
             $emptyGPOs += $gpo
         }
-        $LinksPaths = $gpocontent.GPO.LinksTo | Where-Object { $_.Enabled -eq $True } | ForEach-Object { $_.SOMPath }
     }
+    $LinksPaths = $gpocontent.GPO.LinksTo
     $CreatedTime = $gpocontent.GPO.CreatedTime
     $ModifiedTime = $gpocontent.GPO.ModifiedTime
     $CompVerDir = $gpocontent.GPO.Computer.VersionDirectory
@@ -518,7 +517,9 @@ foreach ($gpo in $Script:GPOs) {
         $objGPOLinks = New-Object System.Object
         $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $gpo.DisplayName
         $objGPOLinks | Add-Member -type noteproperty -name ID -value $gpo.Id
-        $objGPOLinks | Add-Member -type noteproperty -name LinksPath -value $LinksPath
+        $objGPOLinks | Add-Member -type noteproperty -name "Link Path" -value $LinksPath.SOMPath
+        $objGPOLinks | Add-Member -type noteproperty -name "Link Enabled" -value $LinksPath.Enabled
+        $objGPOLinks | Add-Member -type noteproperty -name "Link NoOverride" -value $LinksPath.NoOverride
         $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($gpo.WmiFilter).Name
         $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
         $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
@@ -549,7 +550,7 @@ Else {
     Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
 # GPO Properties Report
-$colGPOLinks | sort-object GPOName, LinksPath | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
+$colGPOLinks | sort-object GPOName, "Link Path" | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
 
 
