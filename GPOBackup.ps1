@@ -554,7 +554,7 @@ Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
 $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
 $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
 if ($RowCount -ne 0) {
-    write-host "`tExporting $RowCount WMI Filters" -ForeGroundColor Green
+    write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
     $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
     } 
 else {
