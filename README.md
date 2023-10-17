@@ -26,7 +26,6 @@ Michael Patterson
 scripts@mwpatterson.com
 
 Revision History
-
 - 2017-08-18 - Initial Release
 - 2017-08-18 - Added and change/notes for drive mapping incase user was mapping to the full path of the folder
 - 2017-08-18 - Added Changed GPO Report and eMail Notification for GPO's that changed
