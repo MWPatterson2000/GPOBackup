@@ -68,7 +68,7 @@ Other Parts taken from other scripts on the web
 
 This script is for backups.  To restore you can do the following steps:
 
-1. Extract the zip file to a location for use
+1. Extract the 7z/zip file to a location for use
 2. Open Admin PowerShell
 3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup":  
     - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
