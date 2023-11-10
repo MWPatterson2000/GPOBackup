@@ -595,7 +595,7 @@ if ((Test-Path $backupPath) -eq $false) {
 if ($individualBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
     foreach ($gpo in $Script:GPOs) {
-        Write-Host "`t`tProcessing GPO" $gpo.DisplayName -ForeGroundColor Yellow
+        Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
         #$foldername = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
         #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
         #$foldername = join-path $backupPath ($gpo.DisplayName) # Raw Name # Keep " "
