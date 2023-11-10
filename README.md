@@ -58,6 +58,7 @@ Revision History
 - 2023-10-10 - Added EmptyGPOReport.csv
 - 2023-10-11 - Cleanup & Script Optimization, Combined Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
 - 2023-10-13 - Added a Replace to the GPO Export file name to replace "\" with " "
+- 2023-11-10 - Added a Replace to the GPO Export file name to replace "/" with "_", Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
