@@ -85,6 +85,8 @@ Clear-Host
 # Funtions
 # Clear Varables
 function Get-UserVariable ($Name = '*') {
+    [CmdletBinding()]
+    #param ()
     # these variables may exist in certain environments (like ISE, or after use of foreach)
     $special = 'ps', 'psise', 'psunsupportedconsoleapplications', 'foreach', 'profile'
 
@@ -106,18 +108,18 @@ function Get-UserVariable ($Name = '*') {
 # Set Variables
 # HTML Report 
 #$HTMLReport = "Yes"
-$HTMLReport = "No"
+$HTMLReport = 'No'
 
 # Individual Backup 
-$individualBackup = "Yes"
+$individualBackup = 'Yes'
 #$individualBackup = "No"
 
 # Single Backup 
 #$singleBackup = "Yes"
-$singleBackup = "No"
+$singleBackup = 'No'
 
 # WMI Filters Backup
-$WMIFilters = "Yes"
+$WMIFilters = 'Yes'
 #$WMIFilters = "No"
 
 # Set Domain
@@ -125,17 +127,17 @@ $WMIFilters = "Yes"
 #$domain = $env:USERDOMAIN #Short Domain Name
 
 # Set Domain Controller
-$setServer = "No"
+$setServer = 'No'
 #$setServer = "Yes"
 #$server = "<FQDN>"
 
 # Get Date & Backup Locations
-$date = get-date -Format "yyyy-MM-dd-HH-mm"
-$backupRoot = "C:\" #Can use another drive if available
-$backupFolder = "GPOBackupByName\"
+$date = get-date -Format 'yyyy-MM-dd-HH-mm'
+$backupRoot = 'C:\' #Can use another drive if available
+$backupFolder = 'GPOBackupByName\'
 $backupFolderPath = $backupRoot + $backupFolder
 #$backupFileName = $date + "-" + $domain 
-$backupFileName = $date + "-" + $env:USERDNSDOMAIN #Full Domain Name 
+$backupFileName = $date + '-' + $env:USERDNSDOMAIN #Full Domain Name 
 #$backupFileName = $date + "-" + $env:USERDOMAIN #Short Domain Name
 #$backupPath = $backupRoot + $backupFolder + $date + "-" + $domain
 $backupPath = $backupFolderPath + $backupFileName
@@ -150,7 +152,7 @@ if ((Test-Path $backupFolderPath) -eq $false) {
 
 # Export GPO List
 Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
-If ($setServer -eq "Yes") {
+If ($setServer -eq 'Yes') {
     $Script:GPOs = Get-GPO -All -Server $server
 }
 Else {
@@ -183,7 +185,7 @@ $DomainGPOList = $DomainGPOList | sort-object
 "Reading GPO information from SYSVOL ($GPOPoliciesSYSVOLUNC)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 [array]$GPOPoliciesSYSVOL = Get-ChildItem $GPOPoliciesSYSVOLUNC
 ForEach ($GPO in $GPOPoliciesSYSVOL) {
-    If ($GPO.Name -ne "PolicyDefinitions") { 
+    If ($GPO.Name -ne 'PolicyDefinitions') { 
         [array]$SYSVOLGPOList += $GPO.Name 
     }
 }
@@ -196,11 +198,11 @@ $SYSVOLGPOList = $SYSVOLGPOList | sort-object
 [array]$MissingADGPOs = Compare-Object $SYSVOLGPOList $DomainGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
 [int]$MissingADGPOsCount = $MissingADGPOs.Count
 $MissingADGPOsPCTofTotal = $MissingADGPOsCount / $DomainGPOListCount
-$MissingADGPOsPCTofTotal = "{0:p2}" -f $MissingADGPOsPCTofTotal  
+$MissingADGPOsPCTofTotal = '{0:p2}' -f $MissingADGPOsPCTofTotal  
 "There are $MissingADGPOsCount GPTs in SYSVOL that don't exist in Active Directory ($MissingADGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
 If ($MissingADGPOsCount -gt 0 ) {
-    "These are:" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+    'These are:' | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 }
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
@@ -213,11 +215,11 @@ if ($MissingADGPOs.Count -gt 0) {
 [array]$MissingSYSVOLGPOs = Compare-Object $DomainGPOList $SYSVOLGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
 [int]$MissingSYSVOLGPOsCount = $MissingSYSVOLGPOs.Count
 $MissingSYSVOLGPOsPCTofTotal = $MissingSYSVOLGPOsCount / $DomainGPOListCount
-$MissingSYSVOLGPOsPCTofTotal = "{0:p2}" -f $MissingSYSVOLGPOsPCTofTotal  
+$MissingSYSVOLGPOsPCTofTotal = '{0:p2}' -f $MissingSYSVOLGPOsPCTofTotal  
 "There are $MissingSYSVOLGPOsCount GPCs in Active Directory that don't exist in SYSVOL ($MissingSYSVOLGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
 If ($MissingSYSVOLGPOsCount -gt 0 ) {
-    "These are:" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
+    'These are:' | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 }
 "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
@@ -236,7 +238,7 @@ $emptyGPOs = @()
 Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
 $colGPOLinks = @()
 foreach ($gpo in $Script:GPOs) {
-    If ($setServer -eq "Yes") {
+    If ($setServer -eq 'Yes') {
         [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
     }
     Else {
@@ -257,19 +259,19 @@ foreach ($gpo in $Script:GPOs) {
     $UserVerDir = $gpocontent.GPO.User.VersionDirectory
     $UserVerSys = $gpocontent.GPO.User.VersionSysvol
     $UserEnabled = $gpocontent.GPO.User.Enabled
-    If ($setServer -eq "Yes") {
-        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+    If ($setServer -eq 'Yes') {
+        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
     }
     Else {
-        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq "GpoApply" }).Trustee | Where-Object { $_.SidType -ne "Unknown" }).name -Join ','
+        $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
     }
     foreach ($LinksPath in $LinksPaths) {
         $objGPOLinks = New-Object System.Object
         $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $gpo.DisplayName
         $objGPOLinks | Add-Member -type noteproperty -name ID -value $gpo.Id
-        $objGPOLinks | Add-Member -type noteproperty -name "Link Path" -value $LinksPath.SOMPath
-        $objGPOLinks | Add-Member -type noteproperty -name "Link Enabled" -value $LinksPath.Enabled
-        $objGPOLinks | Add-Member -type noteproperty -name "Link NoOverride" -value $LinksPath.NoOverride
+        $objGPOLinks | Add-Member -type noteproperty -name 'Link Path' -value $LinksPath.SOMPath
+        $objGPOLinks | Add-Member -type noteproperty -name 'Link Enabled' -value $LinksPath.Enabled
+        $objGPOLinks | Add-Member -type noteproperty -name 'Link NoOverride' -value $LinksPath.NoOverride
         $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($gpo.WmiFilter).Name
         $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
         $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
@@ -300,7 +302,7 @@ Else {
     Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
 }
 # GPO Properties Report
-$colGPOLinks | sort-object GPOName, "Link Path" | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
+$colGPOLinks | sort-object GPOName, 'Link Path' | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
 Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
 
 
@@ -320,7 +322,7 @@ Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
 
 # Export GPO Report - XML
 Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
-If ($setServer -eq "Yes") {
+If ($setServer -eq 'Yes') {
     Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
 }
 Else {
@@ -330,9 +332,9 @@ Write-Host "`t`tCreated GPO Report - XML" -ForeGroundColor Yellow
 
 
 # Export GPO Report - HTML
-If ($HTMLReport -eq "Yes") {
+If ($HTMLReport -eq 'Yes') {
     Write-Host "`tPlease Wait - Creating GPO Report - HTML" -ForeGroundColor Yellow
-    If ($setServer -eq "Yes") {
+    If ($setServer -eq 'Yes') {
         Get-GPOReport -All -Server $server -ReportType Html -Path $backupPath-GPOReport.html
     }
     Else {
@@ -358,7 +360,7 @@ if ($individualBackup -eq 'Yes') {
         #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
         #$foldername = join-path $backupPath ($gpo.DisplayName) # Raw Name # Keep " "
         #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
-        $foldername = join-path $backupPath ($gpo.DisplayName.Replace("\", "_").Replace("/", "_") + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
+        $foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
@@ -366,8 +368,8 @@ if ($individualBackup -eq 'Yes') {
         #$filename = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + ".html") # Replace " " with "_"
         #$filename = join-path $backupPath ($gpo.DisplayName + ".html") # Raw Name # Keep " "
         #$filename = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
-        $filename = join-path $backupPath ($gpo.DisplayName.Replace("\", "_").Replace("/", "_") + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
-        If ($setServer -eq "Yes") {
+        $filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Raw Name # Keep " "
+        If ($setServer -eq 'Yes') {
             Backup-GPO -Guid $gpo.Id -Path $foldername -Comment $date -Server $server 
             Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename -Server $server 
         }
@@ -383,8 +385,8 @@ if ($individualBackup -eq 'Yes') {
 # Backup All GPOs into one folder
 if ($singleBackup -eq 'Yes') {
     Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
-    If ($setServer -eq "Yes") {
-        $foldername = join-path $backupPath + "_All"
+    If ($setServer -eq 'Yes') {
+        $foldername = join-path $backupPath + '_All'
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
@@ -392,7 +394,7 @@ if ($singleBackup -eq 'Yes') {
         Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
     Else {
-        $foldername = join-path $backupPath + "_All"
+        $foldername = join-path $backupPath + '_All'
         if ((Test-Path $foldername) -eq $false) {
             New-Item -Path $foldername -ItemType directory
         }
@@ -404,7 +406,7 @@ if ($singleBackup -eq 'Yes') {
 
 # Backup PolicyDefinition Folder
 Write-Host "`tPlease Wait - Backing up PolicyDefinition Folder" -ForeGroundColor Yellow
-$policydefinitionSource = "\\" + $env:USERDOMAIN + "\SYSVOL\" + $env:USERDNSDOMAIN + "\Policies\PolicyDefinitions"
+$policydefinitionSource = '\\' + $env:USERDOMAIN + '\SYSVOL\' + $env:USERDNSDOMAIN + '\Policies\PolicyDefinitions'
 Copy-Item -Path $policydefinitionSource -Recurse -Destination $backupPath -Container
 Write-Host "`t`tBacked up PolicyDefinition Folder" -ForeGroundColor Yellow
 
@@ -420,7 +422,7 @@ if ((Test-Path $7zipPath) -eq $true) {
     Set-Alias Compress-7Zip $7ZipPath
     # Set Source & Destination
     $source = $backupPath
-    $destination = $backupPath + ".7z"
+    $destination = $backupPath + '.7z'
     # Compress Files/Folder
     Compress-7zip a -mx9 -r -t7z $destination $source
 }
@@ -432,11 +434,11 @@ if ((Test-Path $7zipPath) -eq $false) {
     #Compress-Archive -Path $backupPath -DestinationPath $backupPath+".zip"
     #PowerShell 2.0-4.x
     $source = $backupPath
-    $destination = $backupPath + ".zip"
+    $destination = $backupPath + '.zip'
     If (Test-path $destination) {
         Remove-item $destination
     }
-    Add-Type -assembly "system.io.compression.filesystem"
+    Add-Type -assembly 'system.io.compression.filesystem'
     [io.compression.zipfile]::CreateFromDirectory($Source, $destination)
     Write-Host "`t`tCreated ZIP File" -ForeGroundColor Yellow
 }
