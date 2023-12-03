@@ -1,5 +1,5 @@
 <#
-Name: GPOBackup - Export Only.ps1
+Name: GPOBackup.ps1
 
 This script will export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
@@ -49,7 +49,6 @@ Revision History
     2020-11-27 - Cleanup
     2021-04-14 - Added GPO Change Count messages
     2021-05-13 - Added HTML Reporting for Individual GPO's
-    2022-02-18 - Removed all but stuff needed just for Exporting the GPO's
     2022-09-01 - Remove GUID from the Folder path to all long GPO Names
     2023-03-16 - Script Cleanup
     2023-08-16 - Adding ability to use 7-Zip from compression
@@ -61,8 +60,7 @@ Revision History
     2023-10-13 - Added a Replace to the GPO Export file name to replace "\" with " "
     2023-11-10 - Added a Replace to the GPO Export file name to replace "/" with "_"
                     Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
-    2023-12-02 - Changed to Advance Script & Added Progress Bars
-    
+
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
 WMI Filter Export:  
@@ -96,6 +94,38 @@ Begin {
     Clear-Host
 
     # Set Variables
+    #Configure Email notification recipient
+    $smtpserver = '<SMTP Relay Server>'
+    $smtpport = '25'
+    $emailfrom = 'Sender <sender@test.local>'
+    $email1 = 'user1@test.local'
+    #$email2 = "user2@test.local"
+
+    # Send Email
+    #$sendEmail = "Yes"
+    $sendEmail = 'No'
+
+    # Copy to SharePoint Library
+    #$useSharePoint = "Yes"
+    $useSharePoint = 'No'
+    # Specify site URL
+    $SiteURL = 'https://<Company>.sharepoint.com/sites/<Share>'
+    # Set SharePoint Folder
+    $DocLibName = 'Group Policy Backup' # Document Libraty on SharePoint Site
+
+    # Delete Older Backups
+    #$deleteOlder = 'Yes' # Yes
+    $deleteOlder = 'No' # No
+
+    # Set min age of files
+    $max_days = '-7'
+
+    # Get the current date
+    $curr_date = Get-Date
+
+    # Determine how far back we go based on current date
+    $del_date = $curr_date.AddDays($max_days)
+
     # HTML Report 
     #$HTMLReport = "Yes"
     $HTMLReport = 'No'
@@ -111,6 +141,45 @@ Begin {
     # WMI Filters Backup
     $WMIFilters = 'Yes'
     #$WMIFilters = "No"
+
+    # Move GPOBackup off of System
+    #$moveBackups = "Yes"
+    $moveBackups = 'No'
+
+    # Set Share Location - Used for Direct Share Access
+    $useShare = 'Yes'
+    #$useShare = "No"
+    $year = get-date -Format 'yyyy'
+    $shareLocation = '\\Server.local\Share\Folder\GPO'
+    $shareLocation = $shareLocation + '\' + $year
+
+    # Set Network Location - Used when Mapping a Drive
+    #$useMapShare = "Yes"
+    $useMapShare = 'No'
+    $year = get-date -Format 'yyyy'
+    #$networkDrive = "\\Server.local\Share\Folder"
+    $networkDrive = '\\Server.local\Share\Folder\GPO'
+    $networkDrive = $networkDrive + '\' + $year
+
+    # Set Drive Letter - Used when Mapping a Drive
+    $driveLetter = 'Z'
+
+    # Set Folder Location - Used when Mapping a Drive - Needed if not directly mapping directly to full path
+    $folderLocation = 'GPO'
+    #)
+
+    # Combine Network Drive and Folder Location - Used when Mapping a Drive
+    if ($useMapShare -eq 'Yes') {
+        $shareLocation = $driveLetter + ':\' + $folderLocation #Used if not directly mapping directly to full path
+        #$shareLocation = $driveLetter +":\" #Used if directly mapping directly to path
+    }
+
+    # Get Account to copy with - Used when Mapping a Drive
+    if ($useShare -eq 'No') {
+        $user = Read-Host 'Enter User Name'# -AsString
+        $password = Read-Host 'Enter Password' -AsSecureString
+        $mycreds = New-Object System.Management.Automation.PSCredential ($user, $password)
+    }
 
     # Set Domain
     #$domain = $env:USERDNSDOMAIN #Full Domain Name
@@ -153,15 +222,191 @@ Begin {
         Where-Object Name 
     }
 
+    # SharePoint Upload Function
+    Function UploadFileInSlice ($ctx, $libraryName, $fileName, $fileChunkSizeInMB) {
+        [CmdletBinding()]
+        #param ()
+        $fileChunkSizeInMB = 9
+        # Each sliced upload requires a unique ID.
+        $UploadId = [GUID]::NewGuid()
+        # Get the name of the file.
+        $UniqueFileName = [System.IO.Path]::GetFileName($fileName)
+        # Get the folder to upload into.
+        $Docs = $ctx.Web.Lists.GetByTitle($libraryName)
+        $ctx.Load($Docs)
+        $ctx.Load($Docs.RootFolder)
+        $ctx.ExecuteQuery()
+        # Get the information about the folder that will hold the file.
+        $ServerRelativeUrlOfRootFolder = $Docs.RootFolder.ServerRelativeUrl
+        # File object.
+        [Microsoft.SharePoint.Client.File] $upload
+        # Calculate block size in bytes.
+        $BlockSize = $fileChunkSizeInMB * 1024 * 1024
+        # Get the size of the file.
+        $FileSize = (Get-Item $fileName).length
+        if ($FileSize -le $BlockSize) {
+            # Use regular approach.
+            $FileStream = New-Object IO.FileStream($fileName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
+            $FileCreationInfo = New-Object Microsoft.SharePoint.Client.FileCreationInformation
+            $FileCreationInfo.Overwrite = $true
+            $FileCreationInfo.ContentStream = $FileStream
+            $FileCreationInfo.URL = $List.RootFolder.ServerRelativeUrl + '/' + $UniqueFileName
+            $Upload = $Docs.RootFolder.Files.Add($FileCreationInfo)
+            $ctx.Load($Upload)
+            $ctx.ExecuteQuery()
+            return $Upload
+        }
+        else {
+            # Use large file upload approach.
+            $BytesUploaded = $null
+            $Fs = $null
+            Try {
+                $Fs = [System.IO.File]::Open($fileName, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read)
+                $br = New-Object System.IO.BinaryReader($Fs)
+                $buffer = New-Object System.Byte[]($BlockSize)
+                $lastBuffer = $null
+                $fileoffset = 0
+                $totalBytesRead = 0
+                $bytesRead
+                $first = $true
+                $last = $false
+                # Read data from file system in blocks.
+                while (($bytesRead = $br.Read($buffer, 0, $buffer.Length)) -gt 0) {
+                    $totalBytesRead = $totalBytesRead + $bytesRead
+                    # You’ve reached the end of the file.
+                    if ($totalBytesRead -eq $FileSize) {
+                        $last = $true
+                        # Copy to a new buffer that has the correct size.
+                        $lastBuffer = New-Object System.Byte[]($bytesRead)
+                        [array]::Copy($buffer, 0, $lastBuffer, 0, $bytesRead)
+                    }
+                    If ($first) {
+                        $ContentStream = New-Object System.IO.MemoryStream
+                        # Add an empty file.
+                        $fileInfo = New-Object Microsoft.SharePoint.Client.FileCreationInformation
+                        $fileInfo.ContentStream = $ContentStream
+                        $fileInfo.Url = $List.RootFolder.ServerRelativeUrl + '/' + $UniqueFileName
+                        $fileInfo.Overwrite = $true
+                        $Upload = $Docs.RootFolder.Files.Add($fileInfo)
+                        $ctx.Load($Upload)
+                        # Start upload by uploading the first slice.
+                        $s = [System.IO.MemoryStream]::new($buffer)
+                        # Call the start upload method on the first slice.
+                        $BytesUploaded = $Upload.StartUpload($UploadId, $s)
+                        $ctx.ExecuteQuery()
+                        # fileoffset is the pointer where the next slice will be added.
+                        $fileoffset = $BytesUploaded.Value
+                        # You can only start the upload once.
+                        $first = $false
+                    }
+                    Else {
+                        # Get a reference to your file.
+                        $Upload = $ctx.Web.GetFileByServerRelativeUrl($Docs.RootFolder.ServerRelativeUrl + [System.IO.Path]::AltDirectorySeparatorChar + $UniqueFileName)
+                        If ($last) {
+                            # Is this the last slice of data?
+                            $s = [System.IO.MemoryStream]::new($lastBuffer)
+                            # End sliced upload by calling FinishUpload.
+                            $Upload = $Upload.FinishUpload($UploadId, $fileoffset, $s)
+                            $ctx.ExecuteQuery()
+                            #Write-Host “File upload complete”
+                            # Return the file object for the uploaded file.
+                            return $Upload
+                        }
+                        else {
+                            $s = [System.IO.MemoryStream]::new($buffer)
+                            # Continue sliced upload.
+                            $BytesUploaded = $Upload.ContinueUpload($UploadId, $fileoffset, $s)
+                            $ctx.ExecuteQuery()
+                            # Update fileoffset for the next slice.
+                            $fileoffset = $BytesUploaded.Value
+                        }
+                    }
+                } #// while ((bytesRead = br.Read(buffer, 0, buffer.Length)) > 0)
+            }
+            Catch {
+                Write-Host “`t`tError occurred - $fileName”  -ForeGroundColor Red
+            }
+            Finally {
+                if ($null -ne $Fs) {
+                    $Fs.Dispose()
+                }
+            }
+        }
+        return $null
+    }
+
+    # Email Function
+    #function send_email ($exportPath, $email) 
+    function send_email () {
+        [CmdletBinding()]
+        param ()
+        $today = Get-Date
+        $today = $today.ToString('dddd MMMM-dd-yyyy hh:mm tt')
+        $SmtpClient = new-object system.net.mail.smtpClient 
+        $mailmessage = New-Object system.net.mail.mailmessage 
+        #$SmtpClient.Host = "outlook.office365.com"
+        #$SmtpClient.Port = "587"
+        #$SmtpClient.EnableSsl = "True"
+        #$SmtpClient.Credentials = New-Object System.Net.NetworkCredential("User", "Password"); 
+        #$SmtpClient.Host = "<SMTP Relay Server>"
+        $SmtpClient.Host = $smtpserver
+        #$SmtpClient.Port = "25"
+        $SmtpClient.Port = $smtpport
+        #$mailmessage.from = "Sender <sender@test.local>" 
+        $mailmessage.from = $emailfrom 
+        $mailmessage.To.add($email1)
+        #$mailmessage.To.add($email2)
+        $mailmessage.Subject = "PLEASE READ: GPO's have been changed."
+        $mailmessage.IsBodyHtml = $true
+        #$mailmessage.Attachments.Add($emailFile)
+        $mailmessage.Attachments.Add($backupFolderPath + $backupFileName + '-GPOChanges.csv')
+        $mailmessage.Body = @"
+<!--<strong>GPO's have been Changed in $domain</strong><br />-->
+GPO's have been changed in <span style="background-color:yellow;color:black;"><strong>$domain</strong></span>.<br /> <br />
+
+Generated on : $today<br /><br />
+<br /></font></h5>
+"@
+
+        $smtpclient.Send($mailmessage) 
+    }
     # End Function(s)
 
 }
 
 Process {
     # Begin Processing GPO's
+    # Check if GPO Changes in last Day, Exit if no changes made in last day
+    Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+    $Script:ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }
+    $modifiedGPOs = @($Script:ModifiedGPO).Count
+    If ($modifiedGPOs -eq '0') {
+        Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
+        Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+        Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+        Exit   #Exit if no changes made in last day
+    }
+    Write-Host "`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+    Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -ForeGroundColor Yellow
+
+
     # Verify GPO BackupFolder
     if ((Test-Path $backupFolderPath) -eq $false) {
         New-Item -Path $backupFolderPath -ItemType directory
+    }
+
+
+    # Generate List of changes
+    Write-Host "`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
+    $Script:ModifiedGPO | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
+    Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
+
+
+    # Send email Notification
+    if ($sendEmail -eq 'Yes') {
+        Write-Host "`tPlease Wait - Sending Email Report" -ForeGroundColor Yellow
+        send_email
+        Write-Host "`t`tSent Email Report" -ForeGroundColor Yellow
     }
 
 
@@ -247,28 +492,12 @@ Process {
     # Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
     Write-Host "`tPlease Wait - Working on the Following:" -ForeGroundColor Yellow
     Write-Host "`t`tChecking for Unlinked GPO's" -ForeGroundColor Yellow
-    Write-Host "`t`tChecking for Empty GPO's" -ForeGroundColor Yellow
-    Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
-
-    # Build Variables
     $unlinkedGPOs = @()
+    Write-Host "`t`tChecking for Empty GPO's" -ForeGroundColor Yellow
     $emptyGPOs = @()
+    Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
     $colGPOLinks = @()
-    $Script:counter1 = 0
-    #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
-    $Script:GPOCount = $Script:GPOs.Count
-    Write-Host "`tGPO(s) Found:" $Script:GPOCount
-
     foreach ($gpo in $Script:GPOs) {
-        # Build Progress Bar
-        $Script:counter1++
-        $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
-        If ($Script:percentComplete1 -lt 1) {
-            $Script:percentComplete1 = 1
-        }
-        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
-        #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
-        
         If ($setServer -eq 'Yes') {
             [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
         }
@@ -316,9 +545,6 @@ Process {
             $colGPOLinks += $objGPOLinks
         }
     }
-        
-    Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
-
     # Export Unlinked GPO Report
     If ($unlinkedGPOs.Count -eq 0) {
         Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
@@ -389,15 +615,6 @@ Process {
     if ($individualBackup -eq 'Yes') {
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
         foreach ($gpo in $Script:GPOs) {
-            # Build Progress Bar
-            $Script:counter1++
-            $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
-            If ($Script:percentComplete1 -lt 1) {
-                $Script:percentComplete1 = 1
-            }
-            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
-            #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
-            
             Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
@@ -421,7 +638,6 @@ Process {
                 Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename
             }
         }
-        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
         Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 
@@ -491,6 +707,95 @@ Process {
     # Delete GPO Backup Folder
     Write-Host "`tPlease Wait - Deleting GPO Backup Folder" -ForeGroundColor Yellow
     Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
+
+
+    # Calculate Time for Files to Copy to
+    $updload_date = $curr_date.AddHours(-1)
+
+
+    # Copy to SharePoint
+    if ($useSharePoint -eq 'Yes') {
+        # Upload file(s)
+        # Add references to SharePoint client assemblies and authenticate to Office 365 site – required for CSOM
+        Add-Type -Path 'C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\16\ISAPI\Microsoft.SharePoint.Client.dll'
+        Add-Type -Path 'C:\Program Files\Common Files\Microsoft Shared\Web Server Extensions\16\ISAPI\Microsoft.SharePoint.Client.Runtime.dll'
+
+        # Specify username site URL
+        $User = $env:username + '@<Domain>'
+
+        # Get Password
+        $Credentials = Get-Credential "$User" -ErrorAction Stop
+
+        # Split username and password
+        $Username = $credentials.username
+        $Password = $credentials.GetNetworkCredential().password
+
+        # Convert Password to Secure String
+        $Pass = ConvertTo-SecureString $Password -AsPlainText -Force
+
+        # Bind to site collection
+        $Context = New-Object Microsoft.SharePoint.Client.ClientContext($SiteURL)
+        $Creds = New-Object Microsoft.SharePoint.Client.SharePointOnlineCredentials($User, $Pass)
+        $Context.Credentials = $Creds
+
+        # Retrieve list
+        $List = $Context.Web.Lists.GetByTitle($DocLibName)
+        $Context.Load($List.RootFolder)
+        $Context.ExecuteQuery()
+
+        # Upload file(s)
+        Write-Host "`n`tCopying the files - Please Wait" -ForeGroundColor Yellow
+        #Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File -Recurse)) {
+        #Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File)) {
+        Foreach ($File in (Get-ChildItem -Path $backupFolderPath -File | Where-Object { $_.LastWriteTime -gt $updload_date })) {
+            Write-Host "`t`tCopying the file: "$File.FullName -ForeGroundColor Yellow
+            #$UpFile = UploadFileInSlice -ctx $Context -libraryName $DocLibName -fileName $File.FullName
+            $fileName = $File.FullName
+            $UpFile = UploadFileInSlice -ctx $Context -libraryName $DocLibName -fileName $fileName
+            $Context.Dispose()
+        }
+    }
+
+
+    # Delete Old Backup Files
+    If ($deleteOlder -eq 'Yes') {
+        Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
+        Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
+    }
+
+
+    # Complete if not moving off of System
+    if ($moveBackups -eq 'No') {
+        Write-Host "`tGPO Backup - Complete" -ForeGroundColor Yellow
+        Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+        Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+        Exit
+    }
+
+
+    # Copy/Move to File Share
+    if ($useShare -eq 'Yes') {
+        Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
+        Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
+        Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
+        Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+    }
+
+
+    # Copy to Mapped Network Drive
+    if ($useMapShare -eq 'Yes') {
+        #Net Use $driveLetter $networkDrive /User:$user $pwd
+        New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $networkDrive -Credential $mycreds
+        #Copy/Move GPO`t Backups
+        Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
+        Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
+        Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
+        Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        #Disconnect Network Drive
+        #Net Use $driveLetter /D
+    }
 
 }
 
