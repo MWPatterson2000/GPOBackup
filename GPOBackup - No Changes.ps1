@@ -504,7 +504,7 @@ Process {
     $Script:counter1 = 0
     #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
     $Script:GPOCount = $Script:GPOs.Count
-    Write-Host "`tGPO(s) Found:" $Script:GPOCount
+    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
 
     foreach ($gpo in $Script:GPOs) {
         # Build Progress Bar
@@ -634,6 +634,7 @@ Process {
 
     # Backup GPOs into named folders
     if ($individualBackup -eq 'Yes') {
+        $Script:counter1 = 0
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
         foreach ($gpo in $Script:GPOs) {
             # Build Progress Bar
