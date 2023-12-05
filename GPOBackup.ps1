@@ -510,10 +510,12 @@ Process {
         # Build Progress Bar
         $Script:counter1++
         $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
+        $Script:percentComplete1d = '{0:N2}' -f $Script:percentComplete1
         If ($Script:percentComplete1 -lt 1) {
             $Script:percentComplete1 = 1
         }
-        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+        #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.Name)" -PercentComplete $Script:percentComplete1
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
         
         If ($setServer -eq 'Yes') {
@@ -640,10 +642,12 @@ Process {
             # Build Progress Bar
             $Script:counter1++
             $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
+            $Script:percentComplete1d = '{0:N2}' -f $Script:percentComplete1
             If ($Script:percentComplete1 -lt 1) {
                 $Script:percentComplete1 = 1
             }
-            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+            #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.Name)" -PercentComplete $Script:percentComplete1
             #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
 
             Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
