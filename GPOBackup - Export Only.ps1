@@ -268,7 +268,7 @@ Process {
             $Script:percentComplete1 = 1
         }
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
-        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.Name)" -PercentComplete $Script:percentComplete1
+        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
         
         If ($setServer -eq 'Yes') {
@@ -400,7 +400,7 @@ Process {
                 $Script:percentComplete1 = 1
             }
             #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
-            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.Name)" -PercentComplete $Script:percentComplete1
+            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
             #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.Name)"
             
             Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
