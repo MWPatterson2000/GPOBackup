@@ -167,6 +167,10 @@ Process {
     Write-Host "`tBackup Folder Path: $backupPath" -ForeGroundColor Yellow
     Write-Host ''
 
+    
+    # GPO Count
+    $Script:GPOCount = $Script:GPOs.Count
+    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
 
     # Begin Processing GPO's
     # Verify GPO BackupFolder
@@ -266,8 +270,8 @@ Process {
     $colGPOLinks = @()
     $Script:counter1 = 0
     #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
-    $Script:GPOCount = $Script:GPOs.Count
-    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
+    #$Script:GPOCount = $Script:GPOs.Count
+    #Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
 
     foreach ($gpo in $Script:GPOs) {
         # Build Progress Bar
