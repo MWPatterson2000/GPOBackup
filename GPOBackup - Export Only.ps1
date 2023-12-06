@@ -161,7 +161,8 @@ Process {
     # Banner
     Write-Host "`tGPOBackup Script" -ForeGroundColor Yellow
     Write-Host ''
-    Write-Host "`tThis Scrip will Backup all the GPO's and WMI Filters."
+    Write-Host "`tThis Script will Generate Reports for GPO's and Settings."
+    Write-Host "`tThis Script will Backup all the GPO's and WMI Filters."
     Write-Host "`tRoot Backup Folder: $backupFolderPath" -ForeGroundColor Yellow
     Write-Host "`tBackup Folder Path: $backupPath" -ForeGroundColor Yellow
     Write-Host ''
