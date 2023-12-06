@@ -60,6 +60,8 @@ Revision History
     2023-10-13 - Added a Replace to the GPO Export file name to replace "\" with " "
     2023-11-10 - Added a Replace to the GPO Export file name to replace "/" with "_"
                     Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
+    2023-12-02 - Changed to Advance Script & Added Progress Bars
+
 
 Thanks for others on here that I have pulled parts from to make a more comprehensive script
 
@@ -166,7 +168,6 @@ Begin {
 
     # Set Folder Location - Used when Mapping a Drive - Needed if not directly mapping directly to full path
     $folderLocation = 'GPO'
-    #)
 
     # Combine Network Drive and Folder Location - Used when Mapping a Drive
     if ($useMapShare -eq 'Yes') {
@@ -370,11 +371,21 @@ Generated on : $today<br /><br />
 
         $smtpclient.Send($mailmessage) 
     }
+
     # End Function(s)
 
 }
 
 Process {
+    # Banner
+    Write-Host "`tGPOBackup Script" -ForeGroundColor Yellow
+    Write-Host ''
+    Write-Host "`tThis Scrip will Backup all the GPO's and WMI Filters."
+    Write-Host "`tRoot Backup Folder: $backupFolderPath" -ForeGroundColor Yellow
+    Write-Host "`tBackup Folder Path: $backupPath" -ForeGroundColor Yellow
+    Write-Host ''
+    
+    
     # Begin Processing GPO's
     # Check if GPO Changes in last Day, Exit if no changes made in last day
     Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
@@ -492,12 +503,30 @@ Process {
     # Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
     Write-Host "`tPlease Wait - Working on the Following:" -ForeGroundColor Yellow
     Write-Host "`t`tChecking for Unlinked GPO's" -ForeGroundColor Yellow
-    $unlinkedGPOs = @()
     Write-Host "`t`tChecking for Empty GPO's" -ForeGroundColor Yellow
-    $emptyGPOs = @()
     Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
+
+    # Build Variables
+    $unlinkedGPOs = @()
+    $emptyGPOs = @()
     $colGPOLinks = @()
+    $Script:counter1 = 0
+    #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
+    $Script:GPOCount = $Script:GPOs.Count
+    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
+
     foreach ($gpo in $Script:GPOs) {
+        # Build Progress Bar
+        $Script:counter1++
+        $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
+        $Script:percentComplete1d = '{0:N2}' -f $Script:percentComplete1
+        If ($Script:percentComplete1 -lt 1) {
+            $Script:percentComplete1 = 1
+        }
+        #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
+        #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
+        
         If ($setServer -eq 'Yes') {
             [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
         }
@@ -545,6 +574,9 @@ Process {
             $colGPOLinks += $objGPOLinks
         }
     }
+    
+    Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
+
     # Export Unlinked GPO Report
     If ($unlinkedGPOs.Count -eq 0) {
         Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
@@ -613,8 +645,20 @@ Process {
 
     # Backup GPOs into named folders
     if ($individualBackup -eq 'Yes') {
+        $Script:counter1 = 0
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
         foreach ($gpo in $Script:GPOs) {
+            # Build Progress Bar
+            $Script:counter1++
+            $Script:percentComplete1 = ($Script:counter1 / $Script:GPOCount) * 100
+            $Script:percentComplete1d = '{0:N2}' -f $Script:percentComplete1
+            If ($Script:percentComplete1 -lt 1) {
+                $Script:percentComplete1 = 1
+            }
+            #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
+            Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
+            #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
+
             Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
@@ -638,6 +682,7 @@ Process {
                 Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename
             }
         }
+        Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
         Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 
