@@ -377,6 +377,15 @@ Generated on : $today<br /><br />
 }
 
 Process {
+    # Banner
+    Write-Host "`tGPOBackup Script" -ForeGroundColor Yellow
+    Write-Host ''
+    Write-Host "`tThis Scrip will Backup all the GPO's and WMI Filters."
+    Write-Host "`tRoot Backup Folder: $backupFolderPath" -ForeGroundColor Yellow
+    Write-Host "`tBackup Folder Path: $backupPath" -ForeGroundColor Yellow
+    Write-Host ''
+    
+    
     # Begin Processing GPO's
     # Check if GPO Changes in last Day, Exit if no changes made in last day
     Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
