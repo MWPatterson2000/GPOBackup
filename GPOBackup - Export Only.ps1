@@ -169,7 +169,7 @@ Process {
 
     
     # GPO Count
-    $Script:GPOCount = $Script:GPOs.Count
+    $Script:GPOCount = @($Script:GPOs).Count
     Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
 
     # Begin Processing GPO's
@@ -209,7 +209,7 @@ Process {
     }
     #$DomainGPOList = $DomainGPOList -replace("{","") ; $DomainGPOList = $DomainGPOList -replace("}","")
     $DomainGPOList = $DomainGPOList | sort-object 
-    [int]$DomainGPOListCount = $DomainGPOList.Count
+    [int]$DomainGPOListCount = @($DomainGPOList).Count
     "Discovered $DomainGPOListCount GPCs (Group Policy Containers) in Active Directory ($GPOPoliciesDN)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     "Reading GPO information from SYSVOL ($GPOPoliciesSYSVOLUNC)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     [array]$GPOPoliciesSYSVOL = Get-ChildItem $GPOPoliciesSYSVOLUNC
@@ -220,12 +220,12 @@ Process {
     }
     #$SYSVOLGPOList = $SYSVOLGPOList -replace("{","") ; $SYSVOLGPOList = $SYSVOLGPOList -replace("}","")
     $SYSVOLGPOList = $SYSVOLGPOList | sort-object 
-    [int]$SYSVOLGPOListCount = $SYSVOLGPOList.Count
+    [int]$SYSVOLGPOListCount = @($SYSVOLGPOList).Count
     "Discovered $SYSVOLGPOListCount GPTs (Group Policy Templates) in SYSVOL ($GPOPoliciesSYSVOLUNC)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
     # Check for GPTs in SYSVOL that don't exist in AD
     [array]$MissingADGPOs = Compare-Object $SYSVOLGPOList $DomainGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
-    [int]$MissingADGPOsCount = $MissingADGPOs.Count
+    [int]$MissingADGPOsCount = @($MissingADGPOs).Count
     $MissingADGPOsPCTofTotal = $MissingADGPOsCount / $DomainGPOListCount
     $MissingADGPOsPCTofTotal = '{0:p2}' -f $MissingADGPOsPCTofTotal  
     "There are $MissingADGPOsCount GPTs in SYSVOL that don't exist in Active Directory ($MissingADGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
@@ -236,13 +236,13 @@ Process {
     }
     "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     # Write Missing GPOs in AD to CSV File
-    if ($MissingADGPOs.Count -gt 0) {
+    if (@($MissingADGPOs).Count -gt 0) {
         $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOsAD.txt
     }
 
     # Check for GPCs in AD that don't exist in SYSVOL
     [array]$MissingSYSVOLGPOs = Compare-Object $DomainGPOList $SYSVOLGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
-    [int]$MissingSYSVOLGPOsCount = $MissingSYSVOLGPOs.Count
+    [int]$MissingSYSVOLGPOsCount = @($MissingSYSVOLGPOs).Count
     $MissingSYSVOLGPOsPCTofTotal = $MissingSYSVOLGPOsCount / $DomainGPOListCount
     $MissingSYSVOLGPOsPCTofTotal = '{0:p2}' -f $MissingSYSVOLGPOsPCTofTotal  
     "There are $MissingSYSVOLGPOsCount GPCs in Active Directory that don't exist in SYSVOL ($MissingSYSVOLGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
@@ -253,7 +253,7 @@ Process {
     }
     "`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     # Write Missing GPOs in SYSVOL to CSV File
-    if ($MissingSYSVOLGPOs.Count -gt 0) {
+    if (@($MissingSYSVOLGPOs).Count -gt 0) {
         $MissingSYSVOLGPOs | Out-File -FilePath $backupPath-OrphanedGPOsSYSVOL.txt
     }
 
@@ -336,7 +336,7 @@ Process {
     Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
 
     # Export Unlinked GPO Report
-    If ($unlinkedGPOs.Count -eq 0) {
+    If (@($unlinkedGPOs).Count -eq 0) {
         Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
     }
     Else {
@@ -344,7 +344,7 @@ Process {
     }
     Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
     # Empty GPO's
-    If ($emptyGPOs.Count -eq 0) {
+    If (@($emptyGPOs).Count -eq 0) {
         Write-Host "`t`tNo Empty GPO's Found" -ForeGroundColor Green
     }
     Else {
