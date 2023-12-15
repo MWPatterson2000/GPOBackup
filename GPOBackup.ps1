@@ -76,8 +76,9 @@
     7,14,30,180,365
 
 .EXAMPLE
-    
-    
+    & '.\GPOBackup - No Changes.ps1' -deleteOlder $true -maxDays 7
+    Delete GPO Backup Data Older than 7 Days
+
 
 .LINK
     https://github.com/MWPatterson2000/GPOBackup
@@ -175,14 +176,14 @@ Param(
     # Set Domain Name Display
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [ValidateSet($true, $false)]
-    [bool]$domainShort = $false
+    [bool]$domainShort = $false,
 
     # Delete Older Backups
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [ValidateSet($true, $false)]
     [bool]$deleteOlder = $false,
-    [Int32]$max_days = 7
-    $max_days = - $max_days
+    [Int32]$maxDays = 7
+
 
 )
 
@@ -192,6 +193,9 @@ Begin {
     Clear-Host
 
     # Set Variables
+    # Convert to Negative
+    $maxDays = - $maxDays
+
     #Configure Email notification recipient
     $smtpserver = '<SMTP Relay Server>'
     $smtpport = '25'
@@ -215,7 +219,7 @@ Begin {
     $curr_date = Get-Date
 
     # Determine how far back we go based on current date
-    $del_date = $curr_date.AddDays($max_days)
+    $del_date = $curr_date.AddDays($maxDays)
 
     # Move GPOBackup off of System
     #$moveBackups = "Yes"
@@ -882,7 +886,7 @@ Process {
 
     # Delete Old Backup Files
     If ($deleteOlder -eq $true) {
-        Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
+        Write-Host "`tDeleting Older GPO Backup files" -ForeGroundColor Yellow
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
     }
 
@@ -898,11 +902,11 @@ Process {
 
     # Copy/Move to File Share
     if ($useShare -eq 'Yes') {
-        Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        Write-Host "`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
         #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
         Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
-        Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        Write-Host "`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
     }
 
 
@@ -911,11 +915,11 @@ Process {
         #Net Use $driveLetter $networkDrive /User:$user $pwd
         New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $networkDrive -Credential $mycreds
         #Copy/Move GPO`t Backups
-        Write-Host"`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        Write-Host "`tPlease Wait - Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
         #Get-ChildItem $backupFolderPath -Recurse | Copy-Item -Destination $shareLocation # Copy Backups
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -gt $updload_date } | Copy-Item -Destination $shareLocation # Copy Backups
         Get-ChildItem $backupFolderPath -Recurse | Move-Item -Destination $shareLocation # Move Backups
-        Write-Host"`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
+        Write-Host "`t`tCompleted Moving GPO Backup Files to Network Backup Folder" -ForeGroundColor Yellow
         #Disconnect Network Drive
         #Net Use $driveLetter /D
     }

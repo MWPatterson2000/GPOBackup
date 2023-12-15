@@ -76,8 +76,9 @@
     7,14,30,180,365
 
 .EXAMPLE
-    
-    
+    & '.\GPOBackup - No Changes.ps1' -deleteOlder $true -maxDays 7
+    Delete GPO Backup Data Older than 7 Days
+
 
 .LINK
     https://github.com/MWPatterson2000/GPOBackup
@@ -181,8 +182,7 @@ Param(
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [ValidateSet($true, $false)]
     [bool]$deleteOlder = $false,
-    [Int32]$max_days = 7
-    $max_days = - $max_days
+    [Int32]$maxDays = 7
 
 )
 
@@ -191,15 +191,15 @@ Begin {
     # Clear Screen
     Clear-Host
 
-    
-    # Set min age of files
-    $max_days = '-7'
+    # Set Variables
+    # Convert to Negative
+    $maxDays = - $maxDays
 
     # Get the current date
     $curr_date = Get-Date
 
     # Determine how far back we go based on current date
-    $del_date = $curr_date.AddDays($max_days)
+    $del_date = $curr_date.AddDays($maxDays)
 
     # Get Date & Backup Locations
     $date = get-date -Format 'yyyy-MM-dd-HH-mm'
@@ -622,7 +622,7 @@ Process {
 
     # Delete Old Backup Files
     If ($deleteOlder -eq $true) {
-        Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
+        Write-Host "`tDeleting Older GPO Backup files" -ForeGroundColor Yellow
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
     }
 
