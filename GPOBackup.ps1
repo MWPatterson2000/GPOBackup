@@ -144,6 +144,7 @@
     TAGS PowwerShell, Group Policy
     LICENSEURI 
     PROJECTURI 
+    RELEASENOTES
 #>
 
 [CmdletBinding()]
