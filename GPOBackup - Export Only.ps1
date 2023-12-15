@@ -1,84 +1,134 @@
 <#
-Name: GPOBackup - Export Only.ps1
+.SYNOPSIS
+    This script will export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
 
-This script will export the data if changes have been made.  This will keep the number of backups and files down to the minimum needed.
+.DESCRIPTION
+    This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
+    Below is a list of the files created from this script:
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.zip                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.7z                       - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOChanges.csv           - This file contains the Changed GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOList.csv              - This file contains GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.csv            - This file Contains GPO Information like Name, Links, Revision Number, & Security Filtering
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.xml            - This a backup of all the GPO's in a single file incase you need to look for a setting and do not know which GPO it is on.
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.html           - This a backup of all the GPO's in a single file incase you need to look for a setting and do not know which GPO it is on.
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-UnlinkedGPOReport.csv    - This file Contains GPO Information like Name, ID, Status, Creation Time, & Modified Time
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-WMIFiltersExport.csv     - This file Contains WMI Filters Information configured in GPMC
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.txt   - This file Contains list of Orphaned GPOs in SYSVOL
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.txt       - This file Contains list of Orphaned GPOs in AD
+        <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-EmptyGPOReport.csv       - This file Contains list of Empty GPOs in AD
 
-This script will create GPO Reports to track changes and backup the GPO's so you can easily locate changes that have been made and recover.
-Below is a list of the files created from this script:
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.zip                      - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>.7z                       - This contains a backup of all your GPO's the folder is create with the name for each GPO for easy Recovery or viewing
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOChanges.csv           - This file contains the Changed GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOList.csv              - This file contains GPO Information like Name, ID, Owner, Domain, Creation Time, & Modified Time.
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.csv            - This file Contains GPO Information like Name, Links, Revision Number, & Security Filtering
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.xml            - This a backup of all the GPO's in a single file incase you need to look for a setting and do not know which GPO it is on.
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-GPOReport.html           - This a backup of all the GPO's in a single file incase you need to look for a setting and do not know which GPO it is on.
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-UnlinkedGPOReport.csv    - This file Contains GPO Information like Name, ID, Status, Creation Time, & Modified Time
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-WMIFiltersExport.csv     - This file Contains WMI Filters Information configured in GPMC
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOs.txt         - This file Contains Orphaned GPO Report
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsSYSVOL.txt   - This file Contains list of Orphaned GPOs in SYSVOL
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-OrphanedGPOsAD.txt       - This file Contains list of Orphaned GPOs in AD
-    <Year>-<Month>-<Date>-<Hour>-<Minuite>-<Domain>-EmptyGPOReport.csv       - This file Contains list of Empty GPOs in AD
+
+    This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simplier when backup up GPO's
+
+    Thanks for others on here that I have pulled parts from to make a more comprehensive script
+
+    WMI Filter Export:  
+        - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354  
+        - ManageWMIFilters.ps1  
+    Other Parts taken from other scripts on the web
+
+    This script is for backups.  To restore you can do the following steps:
+
+    1. Extract the 7z/zip file to a location for use
+    2. Open Admin PowerShell
+    3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup":  
+        - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
+    4. Open GPMC
+    5. Verify GPO is restored
 
 
-This script was based off of one from Microsoft to backup GPO's by name, I have added more as the need and to make things simplier when backup up GPO's
+.PARAMETER HTMLReport
+    Used to Generate a Single HTML Report for All GPO's
+    $true / $false
 
-Michael Patterson
-scripts@mwpatterson.com
+.PARAMETER individualBackup
+    Used to Generate a GPO Backup for Each GPO Independently
+    $true / $false
 
-Revision History
-    2017-08-18 - Initial Release
-    2017-08-18 - Added and change/notes for drive mapping incase user was mapping to the full path of the folder
-    2017-08-18 - Added Changed GPO Report and eMail Notification for GPO's that changed
-    2017-08-25 - Added Unlinked GPO Report
-    2017-08-31 - Changed Location for Variables to start of Script, Code Cleanup & Formatting
-    2017-12-08 - Added moving to sub folder for yearto keep clutter down, could take it down to mmonth as well by changing $year from "yyyy" to "yyyy-MM"
-    2017-12-27 - Cleanup
-    2018-01-31 - Added check to not send emails
-    2019-01-02 - Changed Text color and added message abount which GPO it was backing up incase it gives an error on backup
-    2019-01-10 - Added PolicyDefinition Folder Backup
-    2019-01-10 - Cleanup
-    2019-08-22 - Added ability to copy to SharePoint
-    2019-08-22 - Added Deleting files older than X Days
-    2019-12-17 - Cleanup
-    2020-01-22 - Added Comment for GPO being backed up & Added All GPO's into One folder Options
-    2020-04-23 - Added WMI Filter Export
-    2020-06-23 - Added HTML Report
-    2020-07-08 - Added Way to Turn of HTML Report if not needed
-    2020-08-25 - Cleanup
-    2020-08-31 - Added Server Setting to specify Domain Controller
-    2020-11-27 - Cleanup
-    2021-04-14 - Added GPO Change Count messages
-    2021-05-13 - Added HTML Reporting for Individual GPO's
-    2022-02-18 - Removed all but stuff needed just for Exporting the GPO's
-    2022-09-01 - Remove GUID from the Folder path to all long GPO Names
-    2023-03-16 - Script Cleanup
-    2023-08-16 - Adding ability to use 7-Zip from compression
-    2023-08-21 - Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
-    2023-10-08 - Moved order to longer processing at the end
-    2023-10-09 - Script Optimization
-    2023-10-10 - Added EmptyGPOReport.csv
-    2023-10-11 - Cleanup & Script Optimization, Combined Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
-    2023-10-13 - Added a Replace to the GPO Export file name to replace "\" with " "
-    2023-11-10 - Added a Replace to the GPO Export file name to replace "/" with "_"
-                    Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
-    2023-12-02 - Changed to Advance Script & Added Progress Bars
+.PARAMETER singleBackup
+    Used to Generate a Single GPO Backup for All GPO's
+    $true / $false
+
+.PARAMETER WMIFiltersBackup
+    Used to specify if WMI Filters are backed up
+    $true / $false
+
+.PARAMETER setServer
+    Used to force script to talk to specific Domain Controller
+    $true / $false
+
+.PARAMETER server
+    Used to define the Domain Controller the Script is to use
+    <FQDN for Domain Controller>
+
+.PARAMETER domainShort
+    Used to Defing if Folder Output used Short or Full Domain Name
+    $true / $ false
+
+
+
+.EXAMPLE
     
-Thanks for others on here that I have pulled parts from to make a more comprehensive script
+    
 
-WMI Filter Export:  
-    - http://www.jhouseconsulting.com/2014/06/09/script-to-create-import-and-export-group-policy-wmi-filters-1354  
-    - ManageWMIFilters.ps1  
-Other Parts taken from other scripts on the web
+.LINK
+    https://github.com/MWPatterson2000/GPOBackup
 
-This script is for backups.  To restore you can do the following steps:
+.NOTES
+    Change Log:
+    Date            Version         By                  Notes
+    ----------------------------------------------------------
+    2017-08-18      2017.08.18      Mike Patterson      Initial Release
+                                                        Added and change/notes for drive mapping incase user was mapping to the full path of the folder
+                                                        Added Changed GPO Report and eMail Notification for GPO's that changed
+    2017-08-25      2017.08.25      Mike Patterson      Added Unlinked GPO Report
+    2017-08-31      2017.08.31      Mike Patterson      Changed Location for Variables to start of Script, Code Cleanup & Formatting
+    2017-12-08      2017.12.08      Mike Patterson      Added moving to sub folder for yearto keep clutter down, could take it down to mmonth as well by changing $year from "yyyy" to "yyyy-MM"
+    2017-12-27      2017.12.27      Mike Patterson      Cleanup
+    2018-01-31      2018.01.31      Mike Patterson      Added check to not send emails
+    2019-01-02      2019.01.02      Mike Patterson      Changed Text color and added message abount which GPO it was backing up incase it gives an error on backup
+    2019-01-10      2019.01.10      Mike Patterson      Added PolicyDefinition Folder Backup
+                                                        Cleanup
+    2019-08-22      2019.08.22      Mike Patterson      Added ability to copy to SharePoint
+    2019-08-22      2019.08.22      Mike Patterson      Added Deleting files older than X Days
+    2019-12-17      2019.12.17      Mike Patterson      Cleanup
+    2020-01-22      2020.01.22      Mike Patterson      Added Comment for GPO being backed up & Added All GPO's into One folder Options
+    2020-04-23      2020.04.23      Mike Patterson      Added WMI Filter Export
+    2020-06-23      2020.06.23      Mike Patterson      Added HTML Report
+    2020-07-08      2020.07.08      Mike Patterson      Added Way to Turn of HTML Report if not needed
+    2020-08-25      2020.08.25      Mike Patterson      Cleanup
+    2020-08-31      2020.08.31      Mike Patterson      Added Server Setting to specify Domain Controller
+    2020-11-27      2020.11.27      Mike Patterson      Cleanup
+    2021-04-14      2021.04.14      Mike Patterson      Added GPO Change Count messages
+    2021-05-13      2021.05.13      Mike Patterson      Added HTML Reporting for Individual GPO's
+    2022-09-01      2022.09.01      Mike Patterson      Remove GUID from the Folder path to all long GPO Names
+    2023-03-16      2023.03.16      Mike Patterson      Script Cleanup
+    2023-08-16      2023.08.16      Mike Patterson      Adding ability to use 7-Zip from compression
+    2023-08-21      2023.08.21      Mike Patterson      Added Orphaned GPO Report, Add 14 Char from GUID for GPO Backups, Cleanup
+    2023-10-08      2023.10.08      Mike Patterson      Moved order to longer processing at the end
+    2023-10-09      2023.10.09      Mike Patterson      Script Optimization
+    2023-10-10      2023.10.10      Mike Patterson      Added EmptyGPOReport.csv
+    2023-10-11      2023.10.11      Mike Patterson      Cleanup & Script Optimization, Combined Export Unlinked GPO Report, Empty GPO's & GPO Properties Report
+    2023-10-13      2023.10.13      Mike Patterson      Added a Replace to the GPO Export file name to replace "\" with " "
+    2023-11-10      2023.11.10      Mike Patterson      Added a Replace to the GPO Export file name to replace "/" with "_"
+                                                        Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
+    2023-12-02      2023.12.02      Mike Patterson      Changed to Advance Script & Added Progress Bars
+    2023-12-15      2023.12.15      Mike Patterson      Building Parameters and Options
 
-1. Extract the 7z/zip file to a location for use
-2. Open Admin PowerShell
-3. import-gpo -BackupGpoName "Original GPO Name" -TargetName "Destination GPO Name" -path "Full Path to GPO Backup":  
-    - EX: import-gpo -BackupGpoName "DC - PDC as Authoritative Time Server" -TargetName "DC - PDC as Authoritative Time Server" -path "C:\GPOBackupByName\2021-05-26-16-03-home.local\DC - PDC as Authoritative Time Server_{38bc3df6-b1f1-4a81-93b2-b9412c0f059d}"
-4. Open GPMC
-5. Verify GPO is restored
-
+    
+    VERSION 2023.12.15
+    GUID e49d9302-b376-4ea3-80bd-81d1e645692f
+    AUTHOR Michael Patterson
+    CONTACT scripts@mwpatterson.com
+    COMPANYNAME 
+    COPYRIGHT 
+    APPLICATION GPOBackup.ps1
+    FEATURE 
+    TAGS PowwerShell, Group Policy
+    LICENSEURI 
+    PROJECTURI 
 #>
 
 [CmdletBinding()]
@@ -89,37 +139,58 @@ Param(
     #[Parameter(AttributeValues)]
     #[ParameterType]
     #$ParameterName
+    # HTML Report 
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$HTMLReport = $false,
+
+    # Individual Backup 
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$individualBackup = $true,
+
+    # Single Backup 
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$singleBackup = $false,
+    
+    # WMI Filters Backup
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$WMIFiltersBackup = $true,
+    
+    # Set Domain Controller
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$setServer = $false,
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [string]$server,
+
+    # Set Domain Name Display
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$domainShort = $false
+
+
 )
+
 
 Begin {
     # Clear Screen
     Clear-Host
 
-    # Set Variables
-    # HTML Report 
-    #$HTMLReport = "Yes"
-    $HTMLReport = 'No'
+    # Delete Older Backups
+    #$deleteOlder = 'Yes' # Yes
+    $deleteOlder = 'No' # No
 
-    # Individual Backup 
-    $individualBackup = 'Yes'
-    #$individualBackup = "No"
+    # Set min age of files
+    $max_days = '-7'
 
-    # Single Backup 
-    #$singleBackup = "Yes"
-    $singleBackup = 'No'
+    # Get the current date
+    $curr_date = Get-Date
 
-    # WMI Filters Backup
-    $WMIFilters = 'Yes'
-    #$WMIFilters = "No"
-
-    # Set Domain
-    #$domain = $env:USERDNSDOMAIN #Full Domain Name
-    #$domain = $env:USERDOMAIN #Short Domain Name
-
-    # Set Domain Controller
-    $setServer = 'No'
-    #$setServer = "Yes"
-    #$server = "<FQDN>"
+    # Determine how far back we go based on current date
+    $del_date = $curr_date.AddDays($max_days)
 
     # Get Date & Backup Locations
     $date = get-date -Format 'yyyy-MM-dd-HH-mm'
@@ -127,8 +198,15 @@ Begin {
     $backupFolder = 'GPOBackupByName\'
     $backupFolderPath = $backupRoot + $backupFolder
     #$backupFileName = $date + "-" + $domain 
-    $backupFileName = $date + '-' + $env:USERDNSDOMAIN #Full Domain Name 
-    #$backupFileName = $date + "-" + $env:USERDOMAIN #Short Domain Name
+    # Set Domain Name Display
+    If ($domainShort -eq $true) {
+        #$domain = $env:USERDOMAIN #Short Domain Name
+        $backupFileName = $date + '-' + $env:USERDOMAIN #Short Domain Name
+    }
+    else {
+        #$domain = $env:USERDNSDOMAIN #Full Domain Name
+        $backupFileName = $date + '-' + $env:USERDNSDOMAIN #Full Domain Name 
+    }
     #$backupPath = $backupRoot + $backupFolder + $date + "-" + $domain
     $backupPath = $backupFolderPath + $backupFileName
 
@@ -168,25 +246,49 @@ Process {
     Write-Host ''
 
     
-    # GPO Count
-    $Script:GPOCount = @($Script:GPOs).Count
-    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
-
     # Begin Processing GPO's
+    # Check if GPO Changes in last Day, Exit if no changes made in last day
+    Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+    $Script:ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }
+    $modifiedGPOs = @($Script:ModifiedGPO).Count
+    If ($modifiedGPOs -eq '0') {
+        Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
+        #Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+        #Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+        #Exit   #Exit if no changes made in last day
+    }
+    Write-Host "`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
+    Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -ForeGroundColor Yellow
+
+
     # Verify GPO BackupFolder
     if ((Test-Path $backupFolderPath) -eq $false) {
         New-Item -Path $backupFolderPath -ItemType directory
     }
 
 
-    # Export GPO List
+    # Generate List of changes
+    Write-Host "`tPlease Wait - Creating GPO Email Report" -ForeGroundColor Yellow
+    $Script:ModifiedGPO | Export-Csv $backupPath-GPOChanges.csv -NoTypeInformation
+    Write-Host "`t`tCreated GPO Email Report" -ForeGroundColor Yellow
+
+
+    # Get GPO's
     Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
-    If ($setServer -eq 'Yes') {
+    If ($setServer -eq $true) {
         $Script:GPOs = Get-GPO -All -Server $server
     }
     Else {
         $Script:GPOs = Get-GPO -All
     }
+
+
+    # GPO Count
+    $Script:GPOCount = @($Script:GPOs).Count
+    Write-Host "`tGPO(s) Found:" $Script:GPOCount -ForeGroundColor Yellow
+
+
+    # Export GPO List
     $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -285,7 +387,7 @@ Process {
         Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
         
-        If ($setServer -eq 'Yes') {
+        If ($setServer -eq $true) {
             [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
         }
         Else {
@@ -306,7 +408,7 @@ Process {
         $UserVerDir = $gpocontent.GPO.User.VersionDirectory
         $UserVerSys = $gpocontent.GPO.User.VersionSysvol
         $UserEnabled = $gpocontent.GPO.User.Enabled
-        If ($setServer -eq 'Yes') {
+        If ($setServer -eq $true) {
             $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
         }
         Else {
@@ -332,7 +434,7 @@ Process {
             $colGPOLinks += $objGPOLinks
         }
     }
-        
+    
     Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
 
     # Export Unlinked GPO Report
@@ -357,22 +459,24 @@ Process {
 
 
     # Backup WMI Filters
-    Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
-    $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
-    $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
-    if ($RowCount -ne 0) {
-        write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
-        $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
-    } 
-    else {
-        Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
-    } 
-    Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
+    if ($WMIFiltersBackup -eq $true) {
+        Write-Host "`tPlease Wait - Backing up WMI Filters" -ForeGroundColor Yellow
+        $WmiFilters = Get-ADObject -Filter 'objectClass -eq "msWMI-Som"' -Properties * | Select-Object * 
+        $RowCount = $WMIFilters | Measure-Object | Select-Object -expand count
+        if ($RowCount -ne 0) {
+            write-host "`t`tExporting $RowCount WMI Filters" -ForeGroundColor Green
+            $WMIFilters | Export-Csv $backupPath-WMIFiltersExport.csv -NoTypeInformation
+        } 
+        else {
+            Write-Host "`t`tThere are no WMI Filters to export" -ForeGroundColor Green 
+        } 
+        Write-Host "`t`tBacked up WMI Filters" -ForeGroundColor Yellow
+    }
 
 
     # Export GPO Report - XML
     Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
-    If ($setServer -eq 'Yes') {
+    If ($setServer -eq $true) {
         Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
     }
     Else {
@@ -382,9 +486,9 @@ Process {
 
 
     # Export GPO Report - HTML
-    If ($HTMLReport -eq 'Yes') {
+    If ($HTMLReport -eq $true) {
         Write-Host "`tPlease Wait - Creating GPO Report - HTML" -ForeGroundColor Yellow
-        If ($setServer -eq 'Yes') {
+        If ($setServer -eq $true) {
             Get-GPOReport -All -Server $server -ReportType Html -Path $backupPath-GPOReport.html
         }
         Else {
@@ -402,7 +506,7 @@ Process {
 
 
     # Backup GPOs into named folders
-    if ($individualBackup -eq 'Yes') {
+    if ($individualBackup -eq $true) {
         $Script:counter1 = 0
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
         foreach ($gpo in $Script:GPOs) {
@@ -416,7 +520,7 @@ Process {
             #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
             Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
             #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
-            
+
             Write-Host "`t`tProcessing GPO:" $gpo.DisplayName -ForeGroundColor Yellow
             #$foldername = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + "_{" + $gpo.Id + "}") # Replace " " with "_"
             #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
@@ -431,7 +535,7 @@ Process {
             #$filename = join-path $backupPath ($gpo.DisplayName + ".html") # Raw Name # Keep " "
             #$filename = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
             $filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Raw Name # Keep " "
-            If ($setServer -eq 'Yes') {
+            If ($setServer -eq $true) {
                 Backup-GPO -Guid $gpo.Id -Path $foldername -Comment $date -Server $server 
                 Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename -Server $server 
             }
@@ -446,24 +550,19 @@ Process {
 
 
     # Backup All GPOs into one folder
-    if ($singleBackup -eq 'Yes') {
+    if ($singleBackup -eq $true) {
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
-        If ($setServer -eq 'Yes') {
-            $foldername = join-path $backupPath + '_All'
-            if ((Test-Path $foldername) -eq $false) {
-                New-Item -Path $foldername -ItemType directory
-            }
+        $foldername = join-path $backupPath '_All'
+        if ((Test-Path $foldername) -eq $false) {
+            New-Item -Path $foldername -ItemType directory
+        }
+        If ($setServer -eq $true) {
             Backup-GPO -All -Server $server -Path $foldername -Comment $date
-            Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
         }
         Else {
-            $foldername = join-path $backupPath + '_All'
-            if ((Test-Path $foldername) -eq $false) {
-                New-Item -Path $foldername -ItemType directory
-            }
             Backup-GPO -All -Path $foldername -Comment $date
-            Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
         }
+        Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 
 
@@ -510,6 +609,13 @@ Process {
     # Delete GPO Backup Folder
     Write-Host "`tPlease Wait - Deleting GPO Backup Folder" -ForeGroundColor Yellow
     Remove-item -Path $backupPath -Recurse -Force -ErrorAction SilentlyContinue
+
+
+    # Delete Old Backup Files
+    If ($deleteOlder -eq 'Yes') {
+        Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
+        Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
+    }
 
 }
 

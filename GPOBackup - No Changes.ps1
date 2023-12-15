@@ -118,7 +118,7 @@
     2023-12-15      2023.12.15      Mike Patterson      Building Parameters and Options
 
     
-    VERSION 2023.12.02
+    VERSION 2023.12.15
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
     CONTACT scripts@mwpatterson.com
