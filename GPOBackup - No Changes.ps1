@@ -767,22 +767,17 @@ Process {
     # Backup All GPOs into one folder
     if ($singleBackup -eq $true) {
         Write-Host "`tPlease Wait - Backing up GPO's" -ForeGroundColor Yellow
+        $foldername = join-path $backupPath '_All'
+        if ((Test-Path $foldername) -eq $false) {
+            New-Item -Path $foldername -ItemType directory
+        }
         If ($setServer -eq $true) {
-            $foldername = join-path $backupPath + '_All'
-            if ((Test-Path $foldername) -eq $false) {
-                New-Item -Path $foldername -ItemType directory
-            }
             Backup-GPO -All -Server $server -Path $foldername -Comment $date
-            Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
         }
         Else {
-            $foldername = join-path $backupPath + '_All'
-            if ((Test-Path $foldername) -eq $false) {
-                New-Item -Path $foldername -ItemType directory
-            }
             Backup-GPO -All -Path $foldername -Comment $date
-            Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
         }
+        Write-Host "`t`tBacked up GPO's" -ForeGroundColor Yellow
     }
 
 
