@@ -67,7 +67,13 @@
     Used to Defing if Folder Output used Short or Full Domain Name
     $true / $ false
 
+.PARAMETER deleteOlder
+    Used to Define if you want to Delete Older GPO Backups
+    $true / $ false
 
+.PARAMETER max_days
+    Used to Define the Number of Days you of GPO Backups you want to Retain
+    7,14,30,180,365
 
 .EXAMPLE
     
@@ -171,6 +177,12 @@ Param(
     [ValidateSet($true, $false)]
     [bool]$domainShort = $false
 
+    # Delete Older Backups
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$deleteOlder = $false,
+    [Int32]$max_days = 7
+    $max_days = - $max_days
 
 )
 
@@ -198,13 +210,6 @@ Begin {
     $SiteURL = 'https://<Company>.sharepoint.com/sites/<Share>'
     # Set SharePoint Folder
     $DocLibName = 'Group Policy Backup' # Document Libraty on SharePoint Site
-
-    # Delete Older Backups
-    #$deleteOlder = 'Yes' # Yes
-    $deleteOlder = 'No' # No
-
-    # Set min age of files
-    $max_days = '-7'
 
     # Get the current date
     $curr_date = Get-Date
@@ -875,7 +880,7 @@ Process {
 
 
     # Delete Old Backup Files
-    If ($deleteOlder -eq 'Yes') {
+    If ($deleteOlder -eq $true) {
         Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
     }

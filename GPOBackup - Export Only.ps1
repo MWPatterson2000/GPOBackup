@@ -52,22 +52,28 @@
     $true / $false
 
 .PARAMETER WMIFiltersBackup
-    Used to specify if WMI Filters are backed up
+    Used to Specify if WMI Filters are backed up
     $true / $false
 
 .PARAMETER setServer
-    Used to force script to talk to specific Domain Controller
+    Used to Force Script to talk to specific Domain Controller
     $true / $false
 
 .PARAMETER server
-    Used to define the Domain Controller the Script is to use
+    Used to Define the Domain Controller the Script is to use
     <FQDN for Domain Controller>
 
 .PARAMETER domainShort
-    Used to Defing if Folder Output used Short or Full Domain Name
+    Used to Define if Folder Output used Short or Full Domain Name
     $true / $ false
 
+.PARAMETER deleteOlder
+    Used to Define if you want to Delete Older GPO Backups
+    $true / $ false
 
+.PARAMETER max_days
+    Used to Define the Number of Days you of GPO Backups you want to Retain
+    7,14,30,180,365
 
 .EXAMPLE
     
@@ -169,8 +175,14 @@ Param(
     # Set Domain Name Display
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [ValidateSet($true, $false)]
-    [bool]$domainShort = $false
+    [bool]$domainShort = $false,
 
+    # Delete Older Backups
+    [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
+    [ValidateSet($true, $false)]
+    [bool]$deleteOlder = $false,
+    [Int32]$max_days = 7
+    $max_days = - $max_days
 
 )
 
@@ -179,10 +191,7 @@ Begin {
     # Clear Screen
     Clear-Host
 
-    # Delete Older Backups
-    #$deleteOlder = 'Yes' # Yes
-    $deleteOlder = 'No' # No
-
+    
     # Set min age of files
     $max_days = '-7'
 
@@ -612,7 +621,7 @@ Process {
 
 
     # Delete Old Backup Files
-    If ($deleteOlder -eq 'Yes') {
+    If ($deleteOlder -eq $true) {
         Write-Host'`tDeleting older GPO Backup files' -ForeGroundColor Yellow
         Get-ChildItem $backupFolderPath -Recurse | Where-Object { $_.LastWriteTime -lt $del_date } | Remove-Item
     }
