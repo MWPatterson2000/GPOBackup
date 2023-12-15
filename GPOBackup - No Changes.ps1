@@ -156,39 +156,39 @@ Param(
     #$ParameterName
     # HTML Report 
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$HTMLReport = $false,
 
     # Individual Backup 
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$individualBackup = $true,
 
     # Single Backup 
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$singleBackup = $false,
     
     # WMI Filters Backup
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$WMIFiltersBackup = $true,
     
     # Set Domain Controller
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$setServer = $false,
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
     [string]$server,
 
     # Set Domain Name Display
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$domainShort = $false,
 
     # Delete Older Backups
     [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName)]
-    [ValidateSet($true, $false)]
+    #[ValidateSet($true, $false)]
     [bool]$deleteOlder = $false,
     [Int32]$maxDays = 7
 
