@@ -192,6 +192,7 @@ Param(
     [bool]$deleteOlder = $false,
     [Int32]$maxDays = 7
 
+
 )
 
 
@@ -811,6 +812,7 @@ Process {
     $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
     # Compress Folders to 7-Zip File
     if ((Test-Path $7zipPath) -eq $true) {
+        Write-Host "`7-Zip Found" -ForeGroundColor Yellow
         Write-Host "`tPlease Wait - Creating 7-ZIP File" -ForeGroundColor Yellow
         # Create Alias
         Set-Alias Compress-7Zip $7ZipPath

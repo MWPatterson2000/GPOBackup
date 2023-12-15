@@ -192,6 +192,7 @@ Param(
     [bool]$deleteOlder = $false,
     [Int32]$maxDays = 7
 
+
 )
 
 
@@ -467,7 +468,7 @@ Process {
     Write-Host "`tRoot Backup Folder: $backupFolderPath" -ForeGroundColor Yellow
     Write-Host "`tBackup Folder Path: $backupPath" -ForeGroundColor Yellow
     Write-Host ''
-
+    
     
     # Begin Processing GPO's
     # Check if GPO Changes in last Day, Exit if no changes made in last day
@@ -476,9 +477,9 @@ Process {
     $modifiedGPOs = @($Script:ModifiedGPO).Count
     If ($modifiedGPOs -eq '0') {
         Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
-        #Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
-        #Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
-        #Exit   #Exit if no changes made in last day
+        Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
+        Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
+        Exit   #Exit if no changes made in last day
     }
     Write-Host "`tPlease Wait - GPO Changes in the last 24 hours" -ForeGroundColor Yellow
     Write-Host "`t`tGPO(s) Changes: $modifiedGPOs" -ForeGroundColor Yellow
@@ -520,6 +521,7 @@ Process {
 
 
     # Export GPO List
+
     $Script:GPOs | Export-Csv $backupPath-GPOList.csv -NoTypeInformation
     Write-Host "`t`tCreated GPO List" -ForeGroundColor Yellow
 
@@ -810,6 +812,7 @@ Process {
     $7zipPath = "$env:ProgramFiles\7-Zip\7z.exe"
     # Compress Folders to 7-Zip File
     if ((Test-Path $7zipPath) -eq $true) {
+        Write-Host "`7-Zip Found" -ForeGroundColor Yellow
         Write-Host "`tPlease Wait - Creating 7-ZIP File" -ForeGroundColor Yellow
         # Create Alias
         Set-Alias Compress-7Zip $7ZipPath
