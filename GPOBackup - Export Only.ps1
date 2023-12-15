@@ -76,8 +76,16 @@
     7,14,30,180,365
 
 .EXAMPLE
-    & '.\GPOBackup - No Changes.ps1' -deleteOlder $true -maxDays 7
+    & '.\GPOBackup - Export Only.ps1' -deleteOlder $true -maxDays 7
     Delete GPO Backup Data Older than 7 Days
+
+.EXAMPLE
+    & '.\GPOBackup - Export Only.ps1' -HTMLReport $true -singleBackup $true
+    Create Singlt HTML Report, Single GPO Backup, & Individual GPO Backup
+
+.EXAMPLE
+    & '.\GPOBackup - Export Only.ps1' -HTMLReport $true -individualBackup $false -singleBackup $true
+    Create Singlt HTML Report & Single GPO Backup
 
 
 .LINK
