@@ -131,9 +131,10 @@
                                                         Changed Replace the GPO Export file name from "\" with " " to "\" with "_"
     2023-12-02      2023.12.02      Mike Patterson      Changed to Advance Script & Added Progress Bars
     2023-12-15      2023.12.15      Mike Patterson      Building Parameters and Options
+    2023-12-20      2023.12.20      Mike Patterson      Added .Replace('|', '_') to Exports
 
     
-    VERSION 2023.12.15
+    VERSION 2023.12.20
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
     CONTACT scripts@mwpatterson.com
@@ -760,7 +761,8 @@ Process {
             #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $gpo.Id + "}") # Keep " "
             #$foldername = join-path $backupPath ($gpo.DisplayName) # Raw Name # Keep " "
             #$foldername = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}") # Keep " "
-            $foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
+            #$foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
+            $foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_').Replace('|', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
             if ((Test-Path $foldername) -eq $false) {
                 New-Item -Path $foldername -ItemType directory
             }
@@ -768,7 +770,8 @@ Process {
             #$filename = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.DisplayName + ".html") # Raw Name # Keep " "
             #$filename = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
-            $filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Raw Name # Keep " "
+            #$foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
+            $foldername = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_').Replace('|', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
             If ($setServer -eq $true) {
                 Backup-GPO -Guid $gpo.Id -Path $foldername -Comment $date -Server $server 
                 Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename -Server $server 
