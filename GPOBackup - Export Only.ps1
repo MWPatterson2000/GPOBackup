@@ -553,9 +553,9 @@ Process {
             #$filename = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + "_{" + $gpo.Id + "}" + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.DisplayName.Replace(" ", "_") + ".html") # Replace " " with "_"
             #$filename = join-path $backupPath ($gpo.DisplayName + ".html") # Raw Name # Keep " "
-            #$filename = join-path $backupPath ($gpo.DisplayName + "_{" + $($gpo.Id).ToString().Substring(0, 14) + "}" + ".html") # Raw Name # Keep " "
-            #$filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
-            $filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_').Replace('|', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}') # Keep " "
+            #$filename = join-path $backupPath ($gpo.DisplayName + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Raw Name # Keep " "
+            #$filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Keep " "
+            $filename = join-path $backupPath ($gpo.DisplayName.Replace('\', '_').Replace('/', '_').Replace('|', '_') + '_{' + $($gpo.Id).ToString().Substring(0, 14) + '}' + '.html') # Keep " "
             If ($setServer -eq $true) {
                 Backup-GPO -Guid $gpo.Id -Path $foldername -Comment $date -Server $server 
                 Get-GPOReport -Guid $gpo.Id -ReportType 'HTML'-Path $filename -Server $server 
