@@ -134,7 +134,7 @@
     2023-12-20      2023.12.20      Mike Patterson      Added .Replace('|', '_') to Exports
 
     
-    VERSION 2023.12.20
+    VERSION 1.23.1220.0
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
     CONTACT scripts@mwpatterson.com
