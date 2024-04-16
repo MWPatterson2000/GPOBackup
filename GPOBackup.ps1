@@ -948,6 +948,10 @@ End {
     Write-Host "`tScript Cleanup" -ForeGroundColor Yellow
     Get-UserVariable | Remove-Variable -ErrorAction SilentlyContinue
 
+    # Memory Cleanup
+    [System.GC]::Collect()
+
     # End
-    Exit
+    #Exit
+    return
 }
