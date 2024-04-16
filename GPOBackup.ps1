@@ -950,6 +950,7 @@ End {
 
     # Memory Cleanup
     [System.GC]::Collect()
+    [System.GC]::WaitForPendingFinalizers()
 
     # End
     #Exit
