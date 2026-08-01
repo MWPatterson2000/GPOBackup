@@ -132,8 +132,8 @@
     2023-12-02      2023.12.02      Mike Patterson      Changed to Advance Script & Added Progress Bars
     2023-12-15      2023.12.15      Mike Patterson      Building Parameters and Options
     2023-12-20      2023.12.20      Mike Patterson      Added .Replace('|', '_') to Exports
+    2026-07-31      2026.07.31      Mike Patterson      Reduced duplicate GPO inventory reads and simplified snapshot collection for lower overhead
 
-    
     VERSION 1.23.1220.0
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
@@ -475,7 +475,8 @@ Process {
     # Begin Processing GPO's
     # Check if GPO Changes in last Day, Exit if no changes made in last day
     Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
-    $Script:ModifiedGPO = Get-GPO -All | Where-Object { $_.ModificationTime -ge $(Get-Date).AddDays(-1) }
+    $referenceDate = (Get-Date).AddDays(-1)
+    $Script:ModifiedGPO = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $referenceDate })
     $modifiedGPOs = @($Script:ModifiedGPO).Count
     If ($modifiedGPOs -eq '0') {
         Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
@@ -540,23 +541,13 @@ Process {
     $GPOPoliciesSYSVOLUNC = "\\$DomainDNS\SYSVOL\$DomainDNS\Policies"
     "Reading GPO information from Active Directory ($GPOPoliciesDN)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt
     $GPOPoliciesADSI = [ADSI]"LDAP://$GPOPoliciesDN"
-    [array]$GPOPolicies = $GPOPoliciesADSI.psbase.children
-    ForEach ($GPO in $GPOPolicies) { 
-        [array]$DomainGPOList += $GPO.Name
-    }
-    #$DomainGPOList = $DomainGPOList -replace("{","") ; $DomainGPOList = $DomainGPOList -replace("}","")
-    $DomainGPOList = $DomainGPOList | sort-object 
+    [array]$GPOPolicies = @($GPOPoliciesADSI.psbase.children)
+    $DomainGPOList = @($GPOPolicies | ForEach-Object { $_.Name }) | Sort-Object
     [int]$DomainGPOListCount = @($DomainGPOList).Count
     "Discovered $DomainGPOListCount GPCs (Group Policy Containers) in Active Directory ($GPOPoliciesDN)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
     "Reading GPO information from SYSVOL ($GPOPoliciesSYSVOLUNC)..." | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
-    [array]$GPOPoliciesSYSVOL = Get-ChildItem $GPOPoliciesSYSVOLUNC
-    ForEach ($GPO in $GPOPoliciesSYSVOL) {
-        If ($GPO.Name -ne 'PolicyDefinitions') { 
-            [array]$SYSVOLGPOList += $GPO.Name 
-        }
-    }
-    #$SYSVOLGPOList = $SYSVOLGPOList -replace("{","") ; $SYSVOLGPOList = $SYSVOLGPOList -replace("}","")
-    $SYSVOLGPOList = $SYSVOLGPOList | sort-object 
+    [array]$GPOPoliciesSYSVOL = @(Get-ChildItem -LiteralPath $GPOPoliciesSYSVOLUNC -ErrorAction SilentlyContinue)
+    $SYSVOLGPOList = @($GPOPoliciesSYSVOL | Where-Object { $_.Name -ne 'PolicyDefinitions' } | ForEach-Object { $_.Name }) | Sort-Object
     [int]$SYSVOLGPOListCount = @($SYSVOLGPOList).Count
     "Discovered $SYSVOLGPOListCount GPTs (Group Policy Templates) in SYSVOL ($GPOPoliciesSYSVOLUNC)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
