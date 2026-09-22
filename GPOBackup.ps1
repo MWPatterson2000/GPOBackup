@@ -135,8 +135,9 @@
     2026-07-31      2026.07.31      Mike Patterson      Reduced duplicate GPO inventory reads and simplified snapshot collection for lower overhead
     2026-09-22      2026.09.22      Mike Patterson      Optimized array growth in the GPO processing loop to reduce memory churn and improve large-domain run time
     2026-09-22      2026.09.22      Mike Patterson      Cached per-run GPO server settings and simplified conditional branching in the main GPO processing loop
+    2026-09-22      2026.09.22      Mike Patterson      Reduced duplicate GPO and GPO report queries and simplified report object construction
 
-    VERSION 1.23.1220.2
+    VERSION 1.23.1220.3
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
     CONTACT scripts@mwpatterson.com
@@ -478,7 +479,13 @@ Process {
     # Check if GPO Changes in last Day, Exit if no changes made in last day
     Write-Host "`tPlease Wait - Checking for GPO Changes in the last 24 hours" -ForeGroundColor Yellow
     $referenceDate = (Get-Date).AddDays(-1)
-    $Script:ModifiedGPO = @(Get-GPO -All | Where-Object { $_.ModificationTime -ge $referenceDate })
+    If ($setServer -eq $true) {
+        $Script:GPOs = @(Get-GPO -All -Server $server)
+    }
+    Else {
+        $Script:GPOs = @(Get-GPO -All)
+    }
+    $Script:ModifiedGPO = @($Script:GPOs | Where-Object { $_.ModificationTime -ge $referenceDate })
     $modifiedGPOs = @($Script:ModifiedGPO).Count
     If ($modifiedGPOs -eq '0') {
         Write-Host "`t`tNo Changes in last Day" -ForeGroundColor Green
@@ -508,17 +515,6 @@ Process {
         send_email
         Write-Host "`t`tSent Email Report" -ForeGroundColor Yellow
     }
-
-
-    # Get GPO's
-    Write-Host "`tPlease Wait - Creating GPO List" -ForeGroundColor Yellow
-    If ($setServer -eq $true) {
-        $Script:GPOs = Get-GPO -All -Server $server
-    }
-    Else {
-        $Script:GPOs = Get-GPO -All
-    }
-
 
     # GPO Count
     $Script:GPOCount = @($Script:GPOs).Count
@@ -607,6 +603,20 @@ Process {
     $emptyGPOs = [System.Collections.Generic.List[psobject]]::new()
     $colGPOLinks = [System.Collections.Generic.List[psobject]]::new()
     $gpoServer = if ($setServer) { $server } else { $null }
+    if ($null -ne $gpoServer) {
+        [string]$allGpoXml = Get-GPOReport -All -ReportType xml -Server $gpoServer
+    }
+    else {
+        [string]$allGpoXml = Get-GPOReport -All -ReportType xml
+    }
+    [xml]$allGpoReport = $allGpoXml
+    $gpoReportById = @{}
+    foreach ($gpoReport in $allGpoReport.SelectNodes("//*[local-name()='GPO']")) {
+        $gpoIdentifier = $gpoReport.SelectSingleNode("./*[local-name()='Identifier']")
+        if ($null -ne $gpoIdentifier) {
+            $gpoReportById[$gpoIdentifier.InnerText.Trim('{}')] = $gpoReport
+        }
+    }
     $Script:counter1 = 0
     #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
     #$Script:GPOCount = $Script:GPOs.Count
@@ -624,50 +634,51 @@ Process {
         Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
 
-        if ($null -ne $gpoServer) {
-            [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $gpoServer
+        $gpocontent = $gpoReportById[$gpo.Id.ToString()]
+        if ($null -eq $gpocontent) {
+            throw "GPO report data was not found for $($gpo.Id)."
         }
-        else {
-            [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
-        }
-        if ($null -eq $gpocontent.GPO.LinksTo) {
+        if ($null -eq $gpocontent.LinksTo) {
             $unlinkedGPOs.Add($gpo)
         }
-        if ($null -eq $gpocontent.GPO.Computer.ExtensionData -and $null -eq $gpocontent.GPO.User.ExtensionData) {
+        if ($null -eq $gpocontent.Computer.ExtensionData -and $null -eq $gpocontent.User.ExtensionData) {
             $emptyGPOs.Add($gpo)
         }
-        $LinksPaths = $gpocontent.GPO.LinksTo
-        $CreatedTime = $gpocontent.GPO.CreatedTime
-        $ModifiedTime = $gpocontent.GPO.ModifiedTime
-        $CompVerDir = $gpocontent.GPO.Computer.VersionDirectory
-        $CompVerSys = $gpocontent.GPO.Computer.VersionSysvol
-        $CompEnabled = $gpocontent.GPO.Computer.Enabled
-        $UserVerDir = $gpocontent.GPO.User.VersionDirectory
-        $UserVerSys = $gpocontent.GPO.User.VersionSysvol
-        $UserEnabled = $gpocontent.GPO.User.Enabled
-        if ($null -ne $gpoServer) {
-            $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $gpoServer | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
-        }
-        else {
-            $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
+        $LinksPaths = $gpocontent.LinksTo
+        $CreatedTime = $gpocontent.CreatedTime
+        $ModifiedTime = $gpocontent.ModifiedTime
+        $CompVerDir = $gpocontent.Computer.VersionDirectory
+        $CompVerSys = $gpocontent.Computer.VersionSysvol
+        $CompEnabled = $gpocontent.Computer.Enabled
+        $UserVerDir = $gpocontent.User.VersionDirectory
+        $UserVerSys = $gpocontent.User.VersionSysvol
+        $UserEnabled = $gpocontent.User.Enabled
+        if ($null -ne $LinksPaths) {
+            if ($null -ne $gpoServer) {
+                $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $gpoServer | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
+            }
+            else {
+                $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
+            }
         }
         foreach ($LinksPath in $LinksPaths) {
-            $objGPOLinks = New-Object System.Object
-            $objGPOLinks | Add-Member -type noteproperty -name GPOName -value $gpo.DisplayName
-            $objGPOLinks | Add-Member -type noteproperty -name ID -value $gpo.Id
-            $objGPOLinks | Add-Member -type noteproperty -name 'Link Path' -value $LinksPath.SOMPath
-            $objGPOLinks | Add-Member -type noteproperty -name 'Link Enabled' -value $LinksPath.Enabled
-            $objGPOLinks | Add-Member -type noteproperty -name 'Link NoOverride' -value $LinksPath.NoOverride
-            $objGPOLinks | Add-Member -type noteproperty -name WmiFilter -value ($gpo.WmiFilter).Name
-            $objGPOLinks | Add-Member -type noteproperty -name CreatedTime -value $CreatedTime
-            $objGPOLinks | Add-Member -type noteproperty -name ModifiedTime -value $ModifiedTime
-            $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsAD -value $CompVerDir
-            $objGPOLinks | Add-Member -type noteproperty -name ComputerRevisionsSYSVOL -value $CompVerSys
-            $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsAD -value $UserVerDir
-            $objGPOLinks | Add-Member -type noteproperty -name UserRevisionsSYSVOL -value $UserVerSys
-            $objGPOLinks | Add-Member -type noteproperty -name ComputerSettingsEnabled -value $CompEnabled
-            $objGPOLinks | Add-Member -type noteproperty -name UserSettingsEnabled -value $UserEnabled
-            $objGPOLinks | Add-Member -type noteproperty -name SecurityFilter -value $SecurityFilter
+            $objGPOLinks = [pscustomobject]@{
+                GPOName                 = $gpo.DisplayName
+                ID                      = $gpo.Id
+                'Link Path'             = $LinksPath.SOMPath
+                'Link Enabled'          = $LinksPath.Enabled
+                'Link NoOverride'       = $LinksPath.NoOverride
+                WmiFilter               = ($gpo.WmiFilter).Name
+                CreatedTime             = $CreatedTime
+                ModifiedTime            = $ModifiedTime
+                ComputerRevisionsAD     = $CompVerDir
+                ComputerRevisionsSYSVOL = $CompVerSys
+                UserRevisionsAD         = $UserVerDir
+                UserRevisionsSYSVOL     = $UserVerSys
+                ComputerSettingsEnabled = $CompEnabled
+                UserSettingsEnabled     = $UserEnabled
+                SecurityFilter          = $SecurityFilter
+            }
             $colGPOLinks.Add($objGPOLinks)
         }
     }
@@ -713,12 +724,7 @@ Process {
 
     # Export GPO Report - XML
     Write-Host "`tPlease Wait - Creating GPO Report - XML" -ForeGroundColor Yellow
-    If ($setServer -eq $true) {
-        Get-GPOReport -All -Server $server -ReportType xml -Path $backupPath-GPOReport.xml
-    }
-    Else {
-        Get-GPOReport -All -ReportType xml -Path $backupPath-GPOReport.xml
-    }
+    Set-Content -Path $backupPath-GPOReport.xml -Value $allGpoXml -Encoding UTF8
     Write-Host "`t`tCreated GPO Report - XML" -ForeGroundColor Yellow
 
 
