@@ -553,10 +553,18 @@ Process {
     [int]$SYSVOLGPOListCount = @($SYSVOLGPOList).Count
     "Discovered $SYSVOLGPOListCount GPTs (Group Policy Templates) in SYSVOL ($GPOPoliciesSYSVOLUNC)`n" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
-    # Check for GPTs in SYSVOL that don't exist in AD
-    [array]$MissingADGPOs = Compare-Object $SYSVOLGPOList $DomainGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
+    # Check for GPTs in SYSVOL that don't exist in AD using HashSet membership for lower overhead
+    $DomainGPOListSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    $SYSVOLGPOListSet = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($gpoName in $DomainGPOList) {
+        $null = $DomainGPOListSet.Add($gpoName)
+    }
+    foreach ($gpoName in $SYSVOLGPOList) {
+        $null = $SYSVOLGPOListSet.Add($gpoName)
+    }
+    $MissingADGPOs = @($SYSVOLGPOList | Where-Object { -not $DomainGPOListSet.Contains($_) })
     [int]$MissingADGPOsCount = @($MissingADGPOs).Count
-    $MissingADGPOsPCTofTotal = $MissingADGPOsCount / $DomainGPOListCount
+    $MissingADGPOsPCTofTotal = if ($DomainGPOListCount -gt 0) { $MissingADGPOsCount / $DomainGPOListCount } else { 0 }
     $MissingADGPOsPCTofTotal = '{0:p2}' -f $MissingADGPOsPCTofTotal  
     "There are $MissingADGPOsCount GPTs in SYSVOL that don't exist in Active Directory ($MissingADGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
@@ -570,10 +578,10 @@ Process {
         $MissingADGPOs | Out-File -FilePath $backupPath-OrphanedGPOsAD.txt
     }
 
-    # Check for GPCs in AD that don't exist in SYSVOL
-    [array]$MissingSYSVOLGPOs = Compare-Object $DomainGPOList $SYSVOLGPOList -passThru | Where-Object { $_.SideIndicator -eq '<=' }
+    # Check for GPCs in AD that don't exist in SYSVOL using HashSet membership for lower overhead
+    $MissingSYSVOLGPOs = @($DomainGPOList | Where-Object { -not $SYSVOLGPOListSet.Contains($_) })
     [int]$MissingSYSVOLGPOsCount = @($MissingSYSVOLGPOs).Count
-    $MissingSYSVOLGPOsPCTofTotal = $MissingSYSVOLGPOsCount / $DomainGPOListCount
+    $MissingSYSVOLGPOsPCTofTotal = if ($DomainGPOListCount -gt 0) { $MissingSYSVOLGPOsCount / $DomainGPOListCount } else { 0 }
     $MissingSYSVOLGPOsPCTofTotal = '{0:p2}' -f $MissingSYSVOLGPOsPCTofTotal  
     "There are $MissingSYSVOLGPOsCount GPCs in Active Directory that don't exist in SYSVOL ($MissingSYSVOLGPOsPCTofTotal of the total)" | Out-File -FilePath $backupPath-OrphanedGPOs.txt -Append
 
