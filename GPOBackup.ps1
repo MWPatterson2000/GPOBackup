@@ -133,8 +133,10 @@
     2023-12-15      2023.12.15      Mike Patterson      Building Parameters and Options
     2023-12-20      2023.12.20      Mike Patterson      Added .Replace('|', '_') to Exports
     2026-07-31      2026.07.31      Mike Patterson      Reduced duplicate GPO inventory reads and simplified snapshot collection for lower overhead
+    2026-09-22      2026.09.22      Mike Patterson      Optimized array growth in the GPO processing loop to reduce memory churn and improve large-domain run time
+    2026-09-22      2026.09.22      Mike Patterson      Cached per-run GPO server settings and simplified conditional branching in the main GPO processing loop
 
-    VERSION 1.23.1220.0
+    VERSION 1.23.1220.2
     GUID e49d9302-b376-4ea3-80bd-81d1e645692f
     AUTHOR Michael Patterson
     CONTACT scripts@mwpatterson.com
@@ -593,9 +595,10 @@ Process {
     Write-Host "`t`tCreating GPO Properties Report" -ForeGroundColor Yellow
 
     # Build Variables
-    $unlinkedGPOs = @()
-    $emptyGPOs = @()
-    $colGPOLinks = @()
+    $unlinkedGPOs = [System.Collections.Generic.List[psobject]]::new()
+    $emptyGPOs = [System.Collections.Generic.List[psobject]]::new()
+    $colGPOLinks = [System.Collections.Generic.List[psobject]]::new()
+    $gpoServer = if ($setServer) { $server } else { $null }
     $Script:counter1 = 0
     #Write-Host "`tGPO(s) Found:" ($Script:GPOs).Count
     #$Script:GPOCount = $Script:GPOs.Count
@@ -612,18 +615,18 @@ Process {
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -PercentComplete $Script:percentComplete1
         Write-Progress -Id 1 -Activity 'Getting GPO' -Status "$Script:percentComplete1d% - $Script:counter1 of $Script:GPOCount - GPO: $($gpo.DisplayName)" -PercentComplete $Script:percentComplete1
         #Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1" -PercentComplete $Script:percentComplete1 -CurrentOperation "GPO $($gpo.DisplayName)"
-        
-        If ($setServer -eq $true) {
-            [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $server
+
+        if ($null -ne $gpoServer) {
+            [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml -Server $gpoServer
         }
-        Else {
+        else {
             [xml]$gpocontent = Get-GPOReport -Guid $gpo.Id -ReportType xml
         }
-        If ($NULL -eq $gpocontent.GPO.LinksTo) {
-            $unlinkedGPOs += $gpo
+        if ($null -eq $gpocontent.GPO.LinksTo) {
+            $unlinkedGPOs.Add($gpo)
         }
-        If ($NULL -eq $gpocontent.GPO.Computer.ExtensionData -and $NULL -eq $gpocontent.GPO.User.ExtensionData) {
-            $emptyGPOs += $gpo
+        if ($null -eq $gpocontent.GPO.Computer.ExtensionData -and $null -eq $gpocontent.GPO.User.ExtensionData) {
+            $emptyGPOs.Add($gpo)
         }
         $LinksPaths = $gpocontent.GPO.LinksTo
         $CreatedTime = $gpocontent.GPO.CreatedTime
@@ -634,10 +637,10 @@ Process {
         $UserVerDir = $gpocontent.GPO.User.VersionDirectory
         $UserVerSys = $gpocontent.GPO.User.VersionSysvol
         $UserEnabled = $gpocontent.GPO.User.Enabled
-        If ($setServer -eq $true) {
-            $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $server | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
+        if ($null -ne $gpoServer) {
+            $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All -Server $gpoServer | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
         }
-        Else {
+        else {
             $SecurityFilter = ((Get-GPPermissions -Guid $gpo.Id -All | Where-Object { $_.Permission -eq 'GpoApply' }).Trustee | Where-Object { $_.SidType -ne 'Unknown' }).name -Join ','
         }
         foreach ($LinksPath in $LinksPaths) {
@@ -657,30 +660,30 @@ Process {
             $objGPOLinks | Add-Member -type noteproperty -name ComputerSettingsEnabled -value $CompEnabled
             $objGPOLinks | Add-Member -type noteproperty -name UserSettingsEnabled -value $UserEnabled
             $objGPOLinks | Add-Member -type noteproperty -name SecurityFilter -value $SecurityFilter
-            $colGPOLinks += $objGPOLinks
+            $colGPOLinks.Add($objGPOLinks)
         }
     }
     
     Write-Progress -Id 1 -Activity 'Getting GPO' -Status "GPO # $Script:counter1 of $Script:GPOCount" -Completed
 
     # Export Unlinked GPO Report
-    If (@($unlinkedGPOs).Count -eq 0) {
+    if ($unlinkedGPOs.Count -eq 0) {
         Write-Host "`t`tNo Unlinked GPO's Found" -ForeGroundColor Green
     }
-    Else {
-        $unlinkedGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
+    else {
+        $unlinkedGPOs.ToArray() | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-UnlinkedGPOReport.csv -NoTypeInformation
     }
     Write-Host "`t`tCreated Unlinked GPO Properties Report" -ForeGroundColor Yellow
     # Empty GPO's
-    If (@($emptyGPOs).Count -eq 0) {
+    if ($emptyGPOs.Count -eq 0) {
         Write-Host "`t`tNo Empty GPO's Found" -ForeGroundColor Green
     }
-    Else {
-        $emptyGPOs | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyGPOReport.csv -NoTypeInformation
+    else {
+        $emptyGPOs.ToArray() | Sort-Object GpoStatus, DisplayName | Select-Object DisplayName, ID, GpoStatus, CreationTime, ModificationTime | Export-Csv -Delimiter ',' -Path $backupPath-EmptyGPOReport.csv -NoTypeInformation
         Write-Host "`t`tCreated Empty GPO Report" -ForeGroundColor Yellow
     }
     # GPO Properties Report
-    $colGPOLinks | sort-object GPOName, 'Link Path' | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
+    $colGPOLinks.ToArray() | Sort-Object GPOName, 'Link Path' | Export-Csv -Delimiter ',' -Path $backupPath-GPOReport.csv -NoTypeInformation
     Write-Host "`t`tCreated GPO Properties Report" -ForeGroundColor Yellow
 
 
